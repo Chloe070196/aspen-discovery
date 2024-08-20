@@ -573,4 +573,10 @@ class OverDrive_AJAX extends JSON_Action {
 			'modalButtons' => "",
 		];
 	}
+
+	public function exportUsageData() {
+		require_once ROOT_DIR . '/services/OverDrive/UsageGraphs.php';
+		$overDriveUsageGraph = new OverDrive_UsageGraphs();
+		$overDriveUsageGraph->buildCSV('OverDrive');
+	}
 }
