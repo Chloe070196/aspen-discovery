@@ -80,11 +80,11 @@ class OverDrive_UsageGraphs extends Admin_AbstractUsageGraphs {
 				$columnLabels[] = $curPeriod;
 				if ($stat =='activeUsers' || $stat =='general'){
 					/** @noinspection PhpUndefinedFieldInspection */
-					$dataSeries['Total Usage']['data'][$curPeriod] = $userUsage->sumUsage;
+					$dataSeries['Unique Users']['data'][$curPeriod] = $userUsage->numUsers;
 				}
 				if ($stat =='general'){	
 					/** @noinspection PhpUndefinedFieldInspection */
-					$dataSeries['Unique Users']['data'][$curPeriod] = $userUsage->numUsers;
+					$dataSeries['Total Usage']['data'][$curPeriod] = $userUsage->sumUsage;
 				}
 			}
 		}
