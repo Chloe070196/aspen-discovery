@@ -8,7 +8,12 @@
 				<div class="dashboardCategory col-sm-6">
 					<div class="row">
 						<div class="col-sm-10 col-sm-offset-1">
-							<h3 class="dashboardCategoryLabel">{translate text="Pages Viewed" isAdminFacing=true} <a href="/Websites/PageStats?siteId={$websiteId}"><small>({translate text="Details" isAdminFacing=true})</small></a></h3>
+							<h3 class="dashboardCategoryLabel">{translate text="Pages Viewed" isAdminFacing=true}
+								{' '}
+								<a href="/Websites/PageStats?siteId={$websiteId}"><small>({translate text="Details" isAdminFacing=true})</small></a>
+								{' '}
+								<a href="/Websites/UsageGraphs?stat=pagesViewed{if !empty($websiteName)}&subSection={$websiteName}{/if}&instance={$selectedInstance}" title="{translate text="Show Pages Viewed Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a>
+							</h3>
 						</div>
 					</div>
 					<div class="row">
@@ -34,7 +39,12 @@
 				<div class="dashboardCategory col-sm-6">
 					<div class="row">
 						<div class="col-sm-10 col-sm-offset-1">
-							<h3 class="dashboardCategoryLabel">{translate text="Pages Visited" isAdminFacing=true} <a href="/Websites/PageStats?siteId={$websiteId}"><small>({translate text="Details" isAdminFacing=true})</small></a></h3>
+							<h3 class="dashboardCategoryLabel">{translate text="Pages Visited" isAdminFacing=true}
+								{' '}
+								<a href="/Websites/PageStats?siteId={$websiteId}"><small>({translate text="Details" isAdminFacing=true})</small></a>
+								{' '}
+								<a href="/Websites/UsageGraphs?stat=pagesVisited{if !empty($websiteName)}&subSection={$websiteName}{/if}&instance={$selectedInstance}" title="{translate text="Show Pages Visited Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a>
+							</h3>
 						</div>
 					</div>
 					<div class="row">
@@ -60,7 +70,10 @@
 				<div class="dashboardCategory col-sm-6">
 					<div class="row">
 						<div class="col-sm-10 col-sm-offset-1">
-							<h3 class="dashboardCategoryLabel">{translate text="Active Users" isAdminFacing=true}</h3>
+							<h3 class="dashboardCategoryLabel">{translate text="Active Users" isAdminFacing=true}
+								{' '}
+								<a href="/Websites/UsageGraphs?stat=activeUsers{if !empty($websiteName)}&subSection={$websiteName}{/if}&instance={$selectedInstance}" title="{translate text="Show Active Users Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a>
+							</h3>
 						</div>
 					</div>
 					<div class="row">
