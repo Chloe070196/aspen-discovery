@@ -9,6 +9,8 @@ class Hoopla_UsageGraphs extends Admin_Admin {
 		global $interface;
 		$title = 'Hoopla Usage Graph';
 		$interface->assign('graphTitle', $title);
+		$this->assignGraphSpecificTitle($stat);
+
 		$this->display('../Admin/usage-graph.tpl', $title);
 	}
 
@@ -30,5 +32,22 @@ class Hoopla_UsageGraphs extends Admin_Admin {
 			'View System Reports',
 			'View Dashboards',
 		]);
+	}
+
+	private function assignGraphSpecificTitle($stat) {
+		global $interface;
+		$title = $interface->getVariable('graphTitle');
+		switch ($stat) {
+			case 'activeUsers':
+				$title .= ' - Active Users';
+				break;
+			case 'recordsUsed':
+				$title .= ' - Records With Usage';
+				break;
+			case 'loans':
+				$title .= ' - Loans';
+				break;
+		}
+		$interface->assign('graphTitle', $title);
 	}
 }
