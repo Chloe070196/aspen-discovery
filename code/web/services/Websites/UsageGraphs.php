@@ -31,4 +31,21 @@ class Websites_UsageGraphs extends Admin_AbstractUsageGraphs {
 			'View Dashboards',
 		]);
 	}
+
+	private function assignGraphSpecificTitle($stat) {
+		global $interface;
+		$title = $interface->getVariable('graphTitle');
+		switch ($stat) {
+			case 'pagesViewed':
+				$title .= ' - Pages Viewed';
+				break;
+			case 'pagesVisited':
+				$title .= ' - Pages Visited';
+				break;
+			case 'activeUsers':
+				$title .= ' - Active Users';
+				break;
+		}
+		$interface->assign('graphTitle', $title);
+	}
 }
