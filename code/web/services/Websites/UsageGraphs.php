@@ -8,12 +8,20 @@ require_once ROOT_DIR . '/sys/Utils/GraphingUtils.php';
 
 class Websites_UsageGraphs extends Admin_Admin {
 	function launch() {
+		global $interface;
+		$stat = $_REQUEST['stat'];
+		if (!empty($_REQUEST['instance'])) {
+			$instanceName = $_REQUEST['instance'];
+		} else {
+			$instanceName = '';
+		}
 		$websiteName= $_REQUEST['websiteName'];
 		$title = 'Websites Usage Graph: ' . $websiteName;
 		$interface->assign('graphTitle', $title);
 		$this->assignGraphSpecificTitle($stat);
 
 		$websiteIndexSettingId = $this->getWebsiteIndexSettingIdBy($websiteName);
+		$this->getAndSetInterfaceDataSeries($stat, $instanceName, $websiteIndexSettingId);
 		$this->display('../Admin/usage-graph.tpl', $title);
 	}
 
@@ -49,6 +57,85 @@ class Websites_UsageGraphs extends Admin_Admin {
 		$websiteIndexSetting->selectAdd();
 		$websiteIndexSetting->find();
 		return $websiteIndexSetting->fetch()->id;
+	}
+
+	private function getAndSetInterfaceDataSeries($stat, $instanceName, $websiteIndexSettingId) {
+		global $interface;
+
+		$dataSeries = [];
+		$columnLabels = [];
+		$usage = [];
+
+		// for the graph displaying data retrieved from the user_website_usage table
+		if ($stat == 'activeUsers') {
+			$userUsage = new UserWebsiteUsage();
+			$userUsage->groupBy('year, month');
+			if (!empty($instanceName)) {
+				$userUsage->instance = $instanceName;
+			}
+			$userUsage->whereAdd("websiteId = $websiteIndexSettingId");
+			$userUsage->selectAdd();
+			$userUsage->selectAdd('year');
+			$userUsage->selectAdd('month');
+			$userUsage->orderBy('year, month');
+
+			$dataSeries['Active Users'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
+			$userUsage->selectAdd('COUNT(id) as numUsers');
+
+			$userUsage->find();
+			while ($userUsage->fetch()) {
+				$curPeriod = "{$userUsage->month}-{$userUsage->year}";
+				$columnLabels[] = $curPeriod;
+				/** @noinspection PhpUndefinedFieldInspection */
+				$dataSeries['Active Users']['data'][$curPeriod] = $userUsage->numUsers;
+			}
+		}
+
+		// for the graph displaying data retrieved from the website_page_usage table
+		if ($stat == 'pagesViewed' || $stat == 'pagesVisited' ) {
+			$usage = new WebPageUsage();
+            $recordInfo = new WebsitePage();
+            $usage->joinAdd($recordInfo, 'INNER', 'record', 'webPageId', 'id');
+			$usage->groupBy('year, month');
+			if (!empty($instanceName)) {
+				$usage->instance = $instanceName;
+			}
+
+			$usage->whereAdd("websiteId = $websiteIndexSettingId");
+			$usage->selectAdd();
+			$usage->selectAdd('year');
+			$usage->selectAdd('month');
+			$usage->orderBy('year, month');
+			if ($stat == 'pagesViewed') {
+				$dataSeries['Pages Viewed'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
+				$usage->selectAdd('SUM(IF(timesViewedInSearch>0,1,0)) as numRecordViewed');
+			}
+			if ($stat == 'pagesVisited') {
+				$dataSeries['Pages Visited'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
+				$usage->selectAdd('SUM(IF(timesUsed>0,1,0)) as numRecordsUsed');
+			}
+			$usage->selectAdd('SUM(IF(timesUsed>0,1,0)) as numRecordsUsed');
+
+			$usage->find();
+			while ($usage->fetch()) {
+				$curPeriod = "{$usage->month}-{$usage->year}";
+				$columnLabels[] = $curPeriod;
+				if ($stat == 'pagesViewed') {
+					/** @noinspection PhpUndefinedFieldInspection */
+					$dataSeries['Pages Viewed']['data'][$curPeriod] = $usage->numRecordsUsed;
+				}
+				if ($stat == 'pagesVisited') {
+					/** @noinspection PhpUndefinedFieldInspection */
+					$dataSeries['Pages Visited']['data'][$curPeriod] = $usage->numRecordsUsed;
+				}
+			}
+		}
+
+
+		$interface->assign('columnLabels', $columnLabels);
+		$interface->assign('dataSeries', $dataSeries);
+		$interface->assign('translateDataSeries', true);
+		$interface->assign('translateColumnLabels', false);
 	}
 
 	private function assignGraphSpecificTitle($stat) {
