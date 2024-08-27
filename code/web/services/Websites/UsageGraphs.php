@@ -148,8 +148,8 @@ class Websites_UsageGraphs extends Admin_Admin {
 		// for the graph displaying data retrieved from the website_page_usage table
 		if ($stat == 'pagesViewed' || $stat == 'pagesVisited' ) {
 			$usage = new WebPageUsage();
-            $recordInfo = new WebsitePage();
-            $usage->joinAdd($recordInfo, 'INNER', 'record', 'webPageId', 'id');
+			$recordInfo = new WebsitePage();
+			$usage->joinAdd($recordInfo, 'INNER', 'record', 'webPageId', 'id');
 			$usage->groupBy('year, month');
 			if (!empty($instanceName)) {
 				$usage->instance = $instanceName;
