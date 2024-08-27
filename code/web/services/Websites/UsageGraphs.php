@@ -32,6 +32,20 @@ class Websites_UsageGraphs extends Admin_AbstractUsageGraphs {
 		]);
 	}
 
+	/*
+		The only unique identifier available to determine for which
+		websiteIndexSetting to fetch data is the websiteIndexSetting's name as $websiteName. It is used
+		here to find the Websites' id as only this exists on the websiteIndexSetting
+		usage tables
+	*/
+	private function getWebsiteIndexSettingIdBy($websiteName): int {
+		$websiteIndexSetting = new WebsiteIndexSetting();
+		$websiteIndexSetting->whereAdd('name = "' . $websiteName .'"');
+		$websiteIndexSetting->selectAdd();
+		$websiteIndexSetting->find();
+		return $websiteIndexSetting->fetch()->id;
+	}
+
 	private function assignGraphSpecificTitle($stat) {
 		global $interface;
 		$title = $interface->getVariable('graphTitle');
