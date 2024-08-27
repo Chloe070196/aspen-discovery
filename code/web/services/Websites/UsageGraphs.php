@@ -121,7 +121,6 @@ class Websites_UsageGraphs extends Admin_AbstractUsageGraphs {
 			}
 		}
 
-
 		$interface->assign('columnLabels', $columnLabels);
 		$interface->assign('dataSeries', $dataSeries);
 		$interface->assign('translateDataSeries', true);
