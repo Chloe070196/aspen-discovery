@@ -12,6 +12,8 @@ class Websites_UsageGraphs extends Admin_Admin {
 		$title = 'Websites Usage Graph: ' . $websiteName;
 		$interface->assign('graphTitle', $title);
 		$this->assignGraphSpecificTitle($stat);
+
+		$websiteIndexSettingId = $this->getWebsiteIndexSettingIdBy($websiteName);
 		$this->display('../Admin/usage-graph.tpl', $title);
 	}
 
@@ -33,6 +35,20 @@ class Websites_UsageGraphs extends Admin_Admin {
 			'View System Reports',
 			'View Dashboards',
 		]);
+	}
+
+	/*
+		The only unique identifier available to determine for which
+		websiteIndexSetting to fetch data is the websiteIndexSetting's name as $websiteName. It is used
+		here to find the Websites' id as only this exists on the websiteIndexSetting
+		usage tables
+	*/
+	private function getWebsiteIndexSettingIdBy($websiteName) {
+		$websiteIndexSetting = new WebsiteIndexSetting();
+		$websiteIndexSetting->whereAdd('name = "' . $websiteName .'"');
+		$websiteIndexSetting->selectAdd();
+		$websiteIndexSetting->find();
+		return $websiteIndexSetting->fetch()->id;
 	}
 
 	private function assignGraphSpecificTitle($stat) {
