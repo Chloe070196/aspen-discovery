@@ -3747,6 +3747,16 @@ class Koha extends AbstractIlsDriver {
 
 		$this->initDatabaseConnection();
 
+		// Get the list of fields from the Koha db - the issue is that they are not categorised
+		/** @noinspection SqlResolve */
+		// $sql = 'SELECT column_name from INFORMATION_SCHEMA.COLUMNS WHERE table_name = "borrowers"';
+		// $results = mysqli_query($this->dbConnection, $sql);
+		// $kohaFormFields = [];
+		// while ($curRow = $results->fetch_assoc()) {
+		// 	array_push($kohaFormFields, $curRow['column_name']);
+		// }
+		// $results->close();
+
 		/** @noinspection SqlResolve */
 		$sql = "SELECT * FROM systempreferences where variable like 'PatronSelf%';";
 		$results = mysqli_query($this->dbConnection, $sql);
