@@ -101,7 +101,7 @@ class Hoopla_UsageGraphs extends Admin_AbstractUsageGraphs {
 		$interface->assign('translateColumnLabels', false);
 	}
 
-	private function assignGraphSpecificTitle($stat) {
+	protected function assignGraphSpecificTitle($stat): void {
 		global $interface;
 		$title = $interface->getVariable('graphTitle');
 		switch ($stat) {
