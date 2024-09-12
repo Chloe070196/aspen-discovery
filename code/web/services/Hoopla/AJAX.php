@@ -301,4 +301,10 @@ class Hoopla_AJAX extends Action {
 	function getBreadcrumbs(): array {
 		return [];
 	}
+
+	function exportUsageData(): void {
+		require_once ROOT_DIR . '/services/Hoopla/UsageGraphs.php';
+		$hooplaUsageGraph = new Hoopla_UsageGraphs();
+		$hooplaUsageGraph->buildCSV('Hoopla');
+	}
 }
