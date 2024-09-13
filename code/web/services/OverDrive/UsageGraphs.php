@@ -7,22 +7,8 @@ require_once ROOT_DIR . '/sys/OverDrive/OverDriveStats.php';
 require_once ROOT_DIR . '/sys/Utils/GraphingUtils.php';
 
 class OverDrive_UsageGraphs extends Admin_AbstractUsageGraphs {
-	function launch() {
-		global $interface;
-
-		$stat = $_REQUEST['stat'];
-		$readerName = new OverDriveDriver();
-		$readerName = $readerName->getReaderName();
-
-		$title = $readerName . ' Usage Graph';
-		if (!empty($_REQUEST['instance'])) {
-			$instanceName = $_REQUEST['instance'];
-		} else {
-			$instanceName = '';
-		}
-
-		$interface->assign('graphTitle', $title);
-		$this->display('../Admin/usage-graph.tpl', $title);
+	function launch(): void {
+		$this->launchGraph('OverDrive');
 	}
 
 	function getBreadcrumbs(): array {
