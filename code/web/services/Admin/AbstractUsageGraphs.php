@@ -3,6 +3,7 @@ require_once ROOT_DIR . '/services/Admin/Admin.php';
 abstract class Admin_AbstractUsageGraphs extends Admin_Admin {
 
 	// method specific enough to be worth writing an implementation for per section
+	abstract function launch(): void; // will usually call launchGraph 
 	abstract function getBreadcrumbs(): array;
 	abstract function getActiveAdminSection(): string;
 	abstract protected function assignGraphSpecificTitle(string $stat): void;
