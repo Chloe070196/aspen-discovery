@@ -43,14 +43,25 @@ function getOclcResourceSharingForGroupsUpdates()
 			]
 		],
         // TODO: write columns for each table  below
-        // '' => [
-        //     'title' => 'Add the OCLC Resource Sharing For Groups Setting Table',
-        //     'description' => 'Add a table to store the different OCLC resource settings (profiles) so that different libraries in one Aspen system can have or share different settings',
-        //     // 'continueOnError' => true,
-        //     'sql' => [
-        //         "CREATE TABLE oclc_resource_sharing_for_groups_setting"
-        //     ],
-        // ],
+		'create_oclc_resource_sharing_for_groups_setting_table' => [
+			'title' => 'Add the OCLC Resource Sharing For Groups Setting Table',
+			'description' => 'Add a table to store the different OCLC resource settings (profiles) so that different libraries in one Aspen system can have or share different settings',
+			'sql' => [
+				"CREATE TABLE oclc_resource_sharing_for_groups_setting (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					name VARCHAR(50),
+					clientKey VARCHAR(255) NOT NULL,
+					clientSecret VARCHAR(255) NOT NULL,
+					oclcSymbol VARCHAR(50) NOT NULL,
+					oclcRegistryId INT NOT NULL,
+					serviceBaseUrl VARCHAR(255) NOT NULL,
+					authBaseUrl VARCHAR(255) NOT NULL DEFAULT 'https://oauth.oclc.org/',
+					urlResourceOwnerDetails VARCHAR(255),
+					scopes VARCHAR(255) NOT NULL DEFAULT 'resource-sharing:my-requests resource-sharing:create-requests resource-sharing:manage-requests resource-sharing:read-requests resource-sharing:search-requests',
+					expirationDate DATETIME NOT NULL
+				)"
+			],
+		],
         // '' => [
         //     'title' => 'Add the User OCLC Resource Sharing For Groups Request Table',
         //     'description' => ' Add a table to store the ILL requests made by a patron via the OCLC Resource Sharing Request API',
