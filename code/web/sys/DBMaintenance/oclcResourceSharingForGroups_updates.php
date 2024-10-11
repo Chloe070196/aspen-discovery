@@ -19,7 +19,6 @@ function getOclcResourceSharingForGroupsUpdates()
                 "INSERT INTO permissions (name, sectionName, requiredModule, weight, description) VALUES ( 'Administer OCLC Resource Sharing For Groups Forms','ILL Integration','OCLC Resource Sharing For Groups', 0, 'Allows the user to administer the OCLC Resource Sharing For Groups ILL request forms')",
             ],
             // TODO:consider an 'administer forms for their library' permission
-            // FIXME: edit weighting so permissions interact proerly with one another
         ],
 		'create_oclc_resource_sharing_for_groups_form_table' => [
 			'title' => 'Add the OCLC Resource Sharing For Groups Form Table',
@@ -43,6 +42,13 @@ function getOclcResourceSharingForGroupsUpdates()
 			]
 		],
         // TODO: write columns for each table  below
+		'add_oclc_resource_sharing_for_groups_settings_id_to_library' => [
+			'title' => 'Add OCLC Resource Sharing For Groups Settings Id To Library',
+			'description' => 'Add an oclcResourceSharingForGroupsSettingsId property to libraries so that they can be assigned the relevant OCLC Resource Sharing For Groups Setting',
+			'sql' => [
+				"ALTER TABLE library ADD oclcResourceSharingForGroupsSettingsId INT NOT NULL DEFAULT -1",
+			],
+		],
 		'create_oclc_resource_sharing_for_groups_setting_table' => [
 			'title' => 'Add the OCLC Resource Sharing For Groups Setting Table',
 			'description' => 'Add a table to store the different OCLC resource settings (profiles) so that different libraries in one Aspen system can have or share different settings',
