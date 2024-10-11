@@ -376,6 +376,9 @@ class Library extends DataObject {
 	public $summonSettingsId;
 	public $showAvailableCoversInSummon;
 
+	//OCLC Settings
+	public $oclcResourceSharingForGroupsSettingsId;
+
 	//SSO
 	public /** @noinspection PhpUnused */
 		$ssoName;
@@ -818,6 +821,16 @@ class Library extends DataObject {
 		$summonSettings[-1] = 'none';
 		while ($summonSetting->fetch()) {
 			$summonSettings[$summonSetting->id] = $summonSetting->name;
+		}
+
+		require_once ROOT_DIR . '/sys/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsSetting.php';
+		$oclcResourceSharingForGroupsSetting = new OCLCResourceSharingForGroupsSetting();
+		$oclcResourceSharingForGroupsSetting->orderBy('name');
+		$oclcResourceSharingForGroupsSettings = [];
+		$oclcResourceSharingForGroupsSetting->find();
+		$oclcResourceSharingForGroupsSettings[-1] = 'none';
+		while ($oclcResourceSharingForGroupsSetting->fetch()) {
+			$oclcResourceSharingForGroupsSettings[$oclcResourceSharingForGroupsSetting->id] = $oclcResourceSharingForGroupsSetting->name;
 		}
 
 
@@ -3975,6 +3988,24 @@ class Library extends DataObject {
 				],
 			],
 
+			'oclcResourceSharingForGroupsSection' => [
+				'property' => 'oclcResourceSharingForGroupsSection',
+				'type' => 'section',
+				'label' => 'OCLC Resource Sharing For Groups',
+				'hideInLists' => true,
+				'renderAsHeading' => true,
+				'properties' => [
+					'oclcResourceSharingForGroupsSettingsId' => [
+						'property' => 'oclcResourceSharingForGroupsSettingsId',
+						'type' => 'enum',
+						'values' => $oclcResourceSharingForGroupsSettings,
+						'label' => 'OCLC Resource Sharing For Groups Settings',
+						'description' => 'Allow patrons of this library to make ILL requests through the OCLC Resource Sharing For Groups Settings selected',
+						'hideInLists' => true,
+						'default' => -1,
+					],
+				],
+			],
 
 			'casSection' => [
 				'property' => 'casSection',
