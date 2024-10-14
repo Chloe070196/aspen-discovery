@@ -14133,7 +14133,7 @@ AspenDiscovery.Record = (function(){
 				}).fail(AspenDiscovery.ajaxFail);
 			}else{
 				AspenDiscovery.Account.ajaxLogin(null, function(){
-					AspenDiscovery.Record.showLocalIllRequest(module, source, id);
+				AspenDiscovery.Record.showLocalIllRequest(module, source, id);
 				}, false);
 			}
 			return false;
@@ -14175,6 +14175,26 @@ AspenDiscovery.Record = (function(){
 			}else{
 				AspenDiscovery.Account.ajaxLogin(null, function(){
 					AspenDiscovery.Record.showLocalIllRequest(module, source, id, volume);
+				}, false);
+			}
+			return false;
+		},
+
+		showOCLCResourceSharingForGroupsRequest: function(module, source, id) {
+			if (Globals.loggedIn){
+				document.body.style.cursor = "wait";
+				var url = Globals.path + "/" +  module + "/" + "AJAX?method=getOCLCResourceSharingForGroupsRequestForm&recordSource=" + source + "&id=" + id;
+				$.getJSON(url, function(data){
+					document.body.style.cursor = "default";
+					if (data.success) {
+						AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
+					} else {
+						AspenDiscovery.showMessage(data.title, data.message);
+					}
+				}).fail(AspenDiscovery.ajaxFail);
+			}else{
+				AspenDiscovery.Account.ajaxLogin(null, function(){
+				AspenDiscovery.Record.showOCLCResourceSharingForGroupsRequest(module, source, id);
 				}, false);
 			}
 			return false;
