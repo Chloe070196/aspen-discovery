@@ -49,6 +49,13 @@ function getOclcResourceSharingForGroupsUpdates()
 				"ALTER TABLE library ADD oclcResourceSharingForGroupsSettingsId INT NOT NULL DEFAULT -1",
 			],
 		],
+		'add_oclc_resource_sharing_for_groups_form_id_to_library' => [
+			'title' => 'Add OCLC Resource Sharing For Groups Form Id To Library',
+			'description' => 'Add an oclcResourceSharingForGroupsFormId property to libraries so that they can be assigned the relevant OCLC Resource Sharing For Groups Form',
+			'sql' => [
+				"ALTER TABLE library ADD oclcResourceSharingForGroupsFormId INT NOT NULL DEFAULT -1",
+			],
+		],
 		'create_oclc_resource_sharing_for_groups_setting_table' => [
 			'title' => 'Add the OCLC Resource Sharing For Groups Setting Table',
 			'description' => 'Add a table to store the different OCLC resource settings (profiles) so that different libraries in one Aspen system can have or share different settings',

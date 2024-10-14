@@ -376,8 +376,9 @@ class Library extends DataObject {
 	public $summonSettingsId;
 	public $showAvailableCoversInSummon;
 
-	//OCLC Settings
+	//OCLC Resource Sharing For Groups
 	public $oclcResourceSharingForGroupsSettingsId;
+	public $oclcResourceSharingForGroupsFormId;
 
 	//SSO
 	public /** @noinspection PhpUnused */
@@ -833,6 +834,15 @@ class Library extends DataObject {
 			$oclcResourceSharingForGroupsSettings[$oclcResourceSharingForGroupsSetting->id] = $oclcResourceSharingForGroupsSetting->name;
 		}
 
+		require_once ROOT_DIR . '/sys/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsForm.php';
+		$oclcResourceSharingForGroupsForm = new OCLCResourceSharingForGroupsForm();
+		$oclcResourceSharingForGroupsForm->orderBy('name');
+		$oclcResourceSharingForGroupsForms = [];
+		$oclcResourceSharingForGroupsForm->find();
+		$oclcResourceSharingForGroupsForms[-1] = 'none';
+		while ($oclcResourceSharingForGroupsForm->fetch()) {
+			$oclcResourceSharingForGroupsForms[$oclcResourceSharingForGroupsForm->id] = $oclcResourceSharingForGroupsForm->name;
+		}
 
 		require_once ROOT_DIR . '/sys/Ebsco/EBSCOhostSetting.php';
 		$ebscohostSetting = new EBSCOhostSearchSetting();
@@ -4001,6 +4011,15 @@ class Library extends DataObject {
 						'values' => $oclcResourceSharingForGroupsSettings,
 						'label' => 'OCLC Resource Sharing For Groups Settings',
 						'description' => 'Allow patrons of this library to make ILL requests through the OCLC Resource Sharing For Groups Settings selected',
+						'hideInLists' => true,
+						'default' => -1,
+					],
+					'oclcResourceSharingForGroupsFormsId' => [
+						'property' => 'oclcResourceSharingForGroupsFormId',
+						'type' => 'enum',
+						'values' => $oclcResourceSharingForGroupsForms,
+						'label' => 'OCLC Resource Sharing For Groups Form',
+						'description' => 'Allow patrons of this library to make ILL requests through the OCLC Resource Sharing For Groups Form selected',
 						'hideInLists' => true,
 						'default' => -1,
 					],
