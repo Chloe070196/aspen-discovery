@@ -1089,85 +1089,129 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 				if ($volumeData == null) {
 					$volumeData = $relatedRecord->getVolumeData();
 				}
-				//See if we have VDX integration. If so, we will either be placing a hold or requesting depending on if there is a copy local to the hold group (whether available or not)
-				$useVdxForRecord = false;
-				$vdxGroupsForLocation = [];
+
+				$useOCLCResourceSharingForGroups = false;
 				try {
-					require_once ROOT_DIR . '/sys/VDX/VdxSetting.php';
-					$vdxSettings = new VdxSetting();
-					if ($vdxSettings->find(true)) {
-						require_once ROOT_DIR . '/sys/VDX/VdxHoldGroup.php';
-						require_once ROOT_DIR . '/sys/VDX/VdxHoldGroupLocation.php';
-						$useVdxForRecord = true;
-						$homeLocation = Location::getDefaultLocationForUser();
-						if ($homeLocation != null) {
-							//Get the VDX Group(s) that we will interact with
-							$vdxGroupsForLocation = new VdxHoldGroupLocation();
-							$vdxGroupsForLocation->locationId = $homeLocation->locationId;
-							$vdxGroupIds = $vdxGroupsForLocation->fetchAll('vdxHoldGroupId');
-							$vdxGroups = [];
-							foreach ($vdxGroupIds as $vdxGroupId) {
-								$vdxGroup = new VdxHoldGroup();
-								$vdxGroup->id = $vdxGroupId;
-								if ($vdxGroup->find(true)) {
-									$vdxGroups[] = clone $vdxGroup;
-								}
-							}
-
-							//Check to see if we have any items that are owned by any of the records in any of the groups.
-							//If we do, we don't need to use VDX
-							if ($relatedRecord->getItems() != null) {
-								foreach ($relatedRecord->getItems() as $itemDetail) {
-									if ($itemDetail->variationId == $variationId || $variationId == 'any') {
-										//Only check holdable items
-										if ($itemDetail->holdable) {
-											//The patron's home location is always valid!
-											if ($itemDetail->locationCode == $homeLocation->code) {
-												$useVdxForRecord = false;
-												break;
-											}
-
-											foreach ($vdxGroups as $vdxGroup) {
-												if (in_array($itemDetail->locationCode, $vdxGroup->getLocationCodes())) {
-													$useVdxForRecord = false;
-													break;
-												}
-											}
-										}
-										if (!$useVdxForRecord) {
-											break;
-										}
-									}
-								}
-							}
-						}
+					require_once ROOT_DIR . '/sys/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsSetting.php';
+					$OCLCResourceSharingForGroupsSettings = new OCLCResourceSharingForGroupsSetting();
+					$homeLibrary = Library::getPatronHomeLibrary();
+					$OCLCResourceSharingForGroupsSettings->whereAdd("id={$homeLibrary->oclcResourceSharingForGroupsSettingsId}");
+					if ($OCLCResourceSharingForGroupsSettings->find(true) && !$item->atUserHomeLocation) {
+						$useOCLCResourceSharingForGroups = true;
 					}
 				} catch (Exception $e) {
 					//This happens if the tables are not installed yet
 				}
-				if (!$useVdxForRecord) {
-					if (!is_null($volumeData) && count($volumeData) > 0 && !$treatVolumeHoldsAsItemHolds) {
-						//Check the items to see which volumes are holdable
-						$hasItemsWithoutVolumes = false;
-						$holdableVolumes = [];
-						if ($relatedRecord->getItems() != null) {
-							foreach ($relatedRecord->getItems() as $itemDetail) {
-								if ($itemDetail->variationId == $variationId || $variationId == 'any') {
-									if ($itemDetail->holdable) {
-										if (!empty($itemDetail->volumeId)) {
-											$holdableVolumes[str_pad($itemDetail->volumeOrder, 10, '0', STR_PAD_LEFT) . $itemDetail->volumeId] = [
-												'volumeName' => $itemDetail->volume,
-												'volumeId' => $itemDetail->volumeId,
-											];
-										} else {
-											$hasItemsWithoutVolumes = true;
+				
+				if(!$useOCLCResourceSharingForGroups) {
+					//See if we have VDX integration. If so, we will either be placing a hold or requesting depending on if there is a copy local to the hold group (whether available or not)
+					$useVdxForRecord = false;
+					$vdxGroupsForLocation = [];
+					try {
+						require_once ROOT_DIR . '/sys/VDX/VdxSetting.php';
+						$vdxSettings = new VdxSetting();
+						if ($vdxSettings->find(true)) {
+							require_once ROOT_DIR . '/sys/VDX/VdxHoldGroup.php';
+							require_once ROOT_DIR . '/sys/VDX/VdxHoldGroupLocation.php';
+							$useVdxForRecord = true;
+							$homeLocation = Location::getDefaultLocationForUser();
+							if ($homeLocation != null) {
+								//Get the VDX Group(s) that we will interact with
+								$vdxGroupsForLocation = new VdxHoldGroupLocation();
+								$vdxGroupsForLocation->locationId = $homeLocation->locationId;
+								$vdxGroupIds = $vdxGroupsForLocation->fetchAll('vdxHoldGroupId');
+								$vdxGroups = [];
+								foreach ($vdxGroupIds as $vdxGroupId) {
+									$vdxGroup = new VdxHoldGroup();
+									$vdxGroup->id = $vdxGroupId;
+									if ($vdxGroup->find(true)) {
+										$vdxGroups[] = clone $vdxGroup;
+									}
+								}
+
+								//Check to see if we have any items that are owned by any of the records in any of the groups.
+								//If we do, we don't need to use VDX
+								if ($relatedRecord->getItems() != null) {
+									foreach ($relatedRecord->getItems() as $itemDetail) {
+										if ($itemDetail->variationId == $variationId || $variationId == 'any') {
+											//Only check holdable items
+											if ($itemDetail->holdable) {
+												//The patron's home location is always valid!
+												if ($itemDetail->locationCode == $homeLocation->code) {
+													$useVdxForRecord = false;
+													break;
+												}
+
+												foreach ($vdxGroups as $vdxGroup) {
+													if (in_array($itemDetail->locationCode, $vdxGroup->getLocationCodes())) {
+														$useVdxForRecord = false;
+														break;
+													}
+												}
+											}
+											if (!$useVdxForRecord) {
+												break;
+											}
 										}
 									}
 								}
 							}
 						}
-						if (count($holdableVolumes) > 3 || $hasItemsWithoutVolumes) {
-							//Show a dialog to enable the patron to select a volume to place a hold on
+					} catch (Exception $e) {
+						//This happens if the tables are not installed yet
+					}
+					if (!$useVdxForRecord) {
+						if (!is_null($volumeData) && count($volumeData) > 0 && !$treatVolumeHoldsAsItemHolds) {
+							//Check the items to see which volumes are holdable
+							$hasItemsWithoutVolumes = false;
+							$holdableVolumes = [];
+							if ($relatedRecord->getItems() != null) {
+								foreach ($relatedRecord->getItems() as $itemDetail) {
+									if ($itemDetail->variationId == $variationId || $variationId == 'any') {
+										if ($itemDetail->holdable) {
+											if (!empty($itemDetail->volumeId)) {
+												$holdableVolumes[str_pad($itemDetail->volumeOrder, 10, '0', STR_PAD_LEFT) . $itemDetail->volumeId] = [
+													'volumeName' => $itemDetail->volume,
+													'volumeId' => $itemDetail->volumeId,
+												];
+											} else {
+												$hasItemsWithoutVolumes = true;
+											}
+										}
+									}
+								}
+							}
+							if (count($holdableVolumes) > 3 || $hasItemsWithoutVolumes) {
+								//Show a dialog to enable the patron to select a volume to place a hold on
+								$this->_actions[$variationId][] = [
+									'title' => translate([
+										'text' => 'Place Hold',
+										'isPublicFacing' => true,
+									]),
+									'url' => '',
+									'id' => "actionButton$id",
+									'onclick' => "return AspenDiscovery.Record.showPlaceHoldVolumes('{$this->getModule()}', '$source', '$id');",
+									'requireLogin' => false,
+									'type' => 'ils_hold',
+								];
+							} else {
+								ksort($holdableVolumes);
+								foreach ($holdableVolumes as $volumeId => $volumeInfo) {
+									$this->_actions[$variationId][] = [
+										'title' => translate([
+											'text' => 'Hold %1%',
+											1 => $volumeInfo['volumeName'],
+											'isPublicFacing' => true,
+										]),
+										'url' => '',
+										'id' => "actionButton$id",
+										'onclick' => "return AspenDiscovery.Record.showPlaceHold('{$this->getModule()}', '$source', '$id', '{$volumeInfo['volumeId']}');",
+										'requireLogin' => false,
+										'type' => 'ils_hold',
+									];
+								}
+							}
+						} else {
 							$this->_actions[$variationId][] = [
 								'title' => translate([
 									'text' => 'Place Hold',
@@ -1175,38 +1219,22 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 								]),
 								'url' => '',
 								'id' => "actionButton$id",
-								'onclick' => "return AspenDiscovery.Record.showPlaceHoldVolumes('{$this->getModule()}', '$source', '$id');",
+								'onclick' => "return AspenDiscovery.Record.showPlaceHold('{$this->getModule()}', '$source', '$id', '', '$variationId');",
 								'requireLogin' => false,
 								'type' => 'ils_hold',
 							];
-						} else {
-							ksort($holdableVolumes);
-							foreach ($holdableVolumes as $volumeId => $volumeInfo) {
-								$this->_actions[$variationId][] = [
-									'title' => translate([
-										'text' => 'Hold %1%',
-										1 => $volumeInfo['volumeName'],
-										'isPublicFacing' => true,
-									]),
-									'url' => '',
-									'id' => "actionButton$id",
-									'onclick' => "return AspenDiscovery.Record.showPlaceHold('{$this->getModule()}', '$source', '$id', '{$volumeInfo['volumeId']}');",
-									'requireLogin' => false,
-									'type' => 'ils_hold',
-								];
-							}
 						}
 					} else {
 						$this->_actions[$variationId][] = [
 							'title' => translate([
-								'text' => 'Place Hold',
+								'text' => 'Request',
 								'isPublicFacing' => true,
 							]),
 							'url' => '',
-							'id' => "actionButton$id",
-							'onclick' => "return AspenDiscovery.Record.showPlaceHold('{$this->getModule()}', '$source', '$id', '', '$variationId');",
+							'onclick' => "return AspenDiscovery.Record.showVdxRequest('{$this->getModule()}', '$source', '$id');",
 							'requireLogin' => false,
-							'type' => 'ils_hold',
+							'type' => 'vdx_request',
+							'btnType' => 'btn-vdx-request btn-action'
 						];
 					}
 				} else {
@@ -1216,10 +1244,10 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 							'isPublicFacing' => true,
 						]),
 						'url' => '',
-						'onclick' => "return AspenDiscovery.Record.showVdxRequest('{$this->getModule()}', '$source', '$id');",
+						'onclick' => "return AspenDiscovery.Record.showOCLCResourceSharingForGroupsRequest('{$this->getModule()}', '$source', '$id');",
 						'requireLogin' => false,
-						'type' => 'vdx_request',
-						'btnType' => 'btn-vdx-request btn-action'
+						'type' => 'OCLCResourceSharingForGroupsRequest_request',
+						'btnType' => 'btn-OCLCResourceSharingForGroupsRequest-request btn-action'
 					];
 				}
 			}

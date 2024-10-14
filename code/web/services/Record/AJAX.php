@@ -213,6 +213,102 @@ class Record_AJAX extends Action {
 		return $results;
 	}
 
+	function getOCLCResourceSharingForGroupsRequestForm() {
+		global $interface;
+		if (UserAccount::isLoggedIn()) {
+			$user = UserAccount::getLoggedInUser();
+			$id = $_REQUEST['id'];
+			if (strpos($id, ':') > 0) {
+				[
+					,
+					$id,
+				] = explode(':', $id);
+			}
+			$recordSource = $_REQUEST['recordSource'];
+			$interface->assign('recordSource', $recordSource);
+			require_once ROOT_DIR . '/sys/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsSetting.php';
+			require_once ROOT_DIR . '/sys/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsForm.php';
+			$OCLCResourceSharingForGroupsSettings = new OCLCResourceSharingForGroupsSetting();
+			if ($OCLCResourceSharingForGroupsSettings->find(true)) {
+				$activeLibrary = Library::getActiveLibrary();
+				if ($activeLibrary != null) {
+					$OCLCResourceSharingForGroupsForm = new OCLCResourceSharingForGroupsForm();
+					$OCLCResourceSharingForGroupsForm->id = $activeLibrary->OCLCResourceSharingForGroupsFormId;
+					if ($OCLCResourceSharingForGroupsForm->find(true)) {
+						//TODO: Check to see if the patron is eligible to place holds (see VDX implementation)
+						$marcRecord = new MarcRecordDriver($id);
+						$interface->assign('OCLCResourceSharingForGroupsForm', $OCLCResourceSharingForGroupsForm);
+						$OCLCResourceSharingForGroupsFormFields = $OCLCResourceSharingForGroupsForm->getFormFields($marcRecord);
+						$interface->assign('structure', $OCLCResourceSharingForGroupsFormFields);
+						$interface->assign('OCLCResourceSharingForGroupsFormFields', $interface->fetch('DataObjectUtil/ajaxForm.tpl'));
+						$results = [
+							'title' => translate([
+								'text' => 'Request Title',
+								'isPublicFacing' => true,
+							]),
+							'modalBody' => $interface->fetch("Record/vdx-request-popup.tpl"),
+							'modalButtons' => '<a href="#" class="btn btn-primary" onclick="return AspenDiscovery.Record.submitOCLCResourceSharingForGroupsRequest(\'Record\', \'' . $id . '\')">' . translate([
+									'text' => 'Place Request',
+									'isPublicFacing' => true,
+								]) . '</a>',
+							'success' => true,
+						];
+					} else {
+						$results = [
+							'title' => translate([
+								'text' => 'Invalid Configuration',
+								'isPublicFacing' => true,
+							]),
+							'message' => translate([
+								'text' => "Unable to find the specified form.",
+								'isPublicFacing' => true,
+							]),
+							'success' => false,
+						];
+					}
+				} else {
+					$results = [
+						'title' => translate([
+							'text' => 'Invalid Configuration',
+							'isPublicFacing' => true,
+						]),
+						'message' => translate([
+							'text' => "Unable to determine home library to place request from.",
+							'isPublicFacing' => true,
+						]),
+						'success' => false,
+					];
+				}
+			} else {
+				$results = [
+					'title' => translate([
+						'text' => 'Invalid Configuration',
+						'isPublicFacing' => true,
+					]),
+					'message' => translate([
+						'text' => " Settings do not exist, please contact the library to make a request.",
+						'isPublicFacing' => true,
+					]),
+					'success' => false,
+				];
+			}
+		} else {
+			$results = [
+				'title' => translate([
+					'text' => 'Please login',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => "You must be logged in.  Please close this dialog and login before placing your request.",
+					'isPublicFacing' => true,
+				]),
+				'success' => false,
+			];
+		}
+		return $results;
+
+	}
+
 	/** @noinspection PhpUnused */
 	function getPlaceHoldForm() {
 		global $interface;

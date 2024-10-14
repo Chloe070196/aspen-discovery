@@ -1,26 +1,21 @@
 <?php 
 
 class OCLCResourceSharingForGroupsForm extends DataObject{
-    public $__table = 'oclc_resource_sharing_for_groups_form';
-    public $id;
-    public $name;
-    public $showAuthor;
-    public $showEdition;
-    public $showPublisher;
-    public $showIsbn;
-    public $showIssn;
-    public $showAcceptFee;
-    public $showMaximumFee;
-    public $feeInformationText;
-    // public $showTitle; - alway show
-    // public $showPickupLocation; - alway show
-    // public $showNote; - alway show
+	public $__table = 'oclc_resource_sharing_for_groups_form';
+	public $id;
+	public $name;
+	public $introText;
+	public $showAuthor;
+	public $showEdition;
+	public $showPublisher;
+	public $showIsbn;
+	public $showIssn;
+	public $showAcceptFee;
+	public $showMaximumFee;
+	public $feeInformationText;
+	public $showCatalogKey;
 
-    // TODO: identify and add necessary methods
-	// TODO: add the oclc_resource_sharing_for_groups_form_location table so that forms can be assigned to specific locations
-    public static function getObjectStructure($context = ''): array {
-		// $locationList = Location::getLocationList(!UserAccount::userHasPermission('Administer OCLC Resource Sharing For Groups Forms'));
-
+	public static function getObjectStructure($context = ''): array {
 		return [
 			'id' => [
 				'property' => 'id',
@@ -34,6 +29,13 @@ class OCLCResourceSharingForGroupsForm extends DataObject{
 				'label' => 'Name',
 				'description' => 'The Name of the Form',
 				'maxLength' => 50,
+			],
+			'introText' => [
+				'property' => 'introText',
+				'type' => 'textarea',
+				'label' => 'Intro Text',
+				'description' => 'Introductory Text to be displayed at the top of the form',
+				'maxLength' => 5000,
 			],
 			'showAuthor' => [
 				'property' => 'showAuthor',
@@ -53,7 +55,7 @@ class OCLCResourceSharingForGroupsForm extends DataObject{
 				'label' => 'Show ISBN?',
 				'description' => 'Whether or not the user should be prompted to enter the ISBN',
 			],
-            'showIssn' => [
+			'showIssn' => [
 				'property' => 'showIssn',
 				'type' => 'checkbox',
 				'label' => 'Show ISSN?',
@@ -78,15 +80,167 @@ class OCLCResourceSharingForGroupsForm extends DataObject{
 				'description' => 'Text to be displayed to give additional information about the fees charged.',
 				'maxLength' => 5000,
 			],
-			// 'locations' => [
-			// 	'property' => 'locations',
-			// 	'type' => 'multiSelect',
-			// 	'listStyle' => 'checkboxSimple',
-			// 	'label' => 'Locations',
-			// 	'description' => 'Define locations that make up this hold group',
-			// 	'values' => $locationList,
-			// 	'hideInLists' => false,
-			// ],
+			'showCatalogKey' => [
+				'property' => 'showCatalogKey',
+				'type' => 'checkbox',
+				'label' => 'Show Catalog Key?',
+				'description' => 'Whether or not the user should be prompted for the catalog key',
+			],
 		];
+	}
+
+	public function getFormFields(?MarcRecordDriver $marcRecordDriver, ?string $volumeInfo = null): array {
+		$fields = [];
+		if ($this->introText) {
+			$fields['introText'] = [
+				'property' => 'introText',
+				'type' => 'label',
+				'label' => $this->introText,
+				'description' => '',
+			];
+		}
+		require_once ROOT_DIR . '/sys/Utils/StringUtils.php';
+		$fields['title'] = [
+			'property' => 'title',
+			'type' => 'text',
+			'label' => 'Title',
+			'description' => 'The title of the title to be request',
+			'maxLength' => 255,
+			'required' => true,
+			'default' => ($marcRecordDriver != null ? StringUtils::removeTrailingPunctuation($marcRecordDriver->getTitle()) : ''),
+		];
+		$fields['author'] = [
+			'property' => 'author',
+			'type' => ($this->showAuthor ? 'text' : 'hidden'),
+			'label' => 'Author',
+			'description' => 'The author of the title to request',
+			'maxLength' => 255,
+			'required' => false,
+			'default' => ($marcRecordDriver != null ? $marcRecordDriver->getAuthor() : ''),
+		];
+		$publisher = '';
+		if ($marcRecordDriver != null) {
+			$publishers = $marcRecordDriver->getPublishers();
+			if (count($publishers) > 0) {
+				$publisher = reset($publishers);
+			}
+		}
+		$fields['publisher'] = [
+			'property' => 'publisher',
+			'type' => ($this->showPublisher ? 'text' : 'hidden'),
+			'label' => 'Publisher',
+			'description' => 'The publisher of the title to request',
+			'maxLength' => 255,
+			'required' => false,
+			'default' => $publisher,
+		];
+		$fields['isbn'] = [
+			'property' => 'isbn',
+			'type' => ($this->showIsbn ? 'text' : 'hidden'),
+			'label' => 'ISBN',
+			'description' => 'The ISBN of the title to request',
+			'maxLength' => 20,
+			'required' => false,
+			'default' => ($marcRecordDriver != null ? $marcRecordDriver->getCleanISBN() : ''),
+		];
+		$fields['issn'] = [
+			'property' => 'issn',
+			'type' => ($this->showIssn ? 'text' : 'hidden'),
+			'label' => 'ISBN',
+			'description' => 'The ISSN of the title to request',
+			'maxLength' => 20,
+			'required' => false,
+			'default' => ($marcRecordDriver != null ? $marcRecordDriver->getISSNs()[0] : ''),
+		];
+		if ($marcRecordDriver != null) {
+			/** @var File_MARC_Control_Field $oclcNumber */
+			$oclcNumber = $marcRecordDriver->getMarcRecord()->getField('001');
+			if ($oclcNumber != null) {
+				$oclcNumberString = StringUtils::truncate($oclcNumber->getData(), 50);
+			} else {
+				$oclcNumberString = '';
+			}
+		} else {
+			$oclcNumberString = '';
+		}
+		$fields['oclcNumber'] = [
+			'property' => 'oclcNumber',
+			'type' => 'hidden',
+			'label' => 'OCLC Number',
+			'description' => 'The OCLC Number',
+			'maxLength' => 50,
+			'required' => false,
+			'default' => $oclcNumberString,
+		];
+		if ($this->showAcceptFee) {
+			$fields['feeInformationText'] = [
+				'property' => 'feeInformationText',
+				'type' => 'label',
+				'label' => $this->feeInformationText,
+				'description' => '',
+			];
+			if ($this->showMaximumFee) {
+				$fields['maximumFeeAmount'] = [
+					'property' => 'maximumFeeAmount',
+					'type' => 'currency',
+					'label' => 'Maximum Fee ',
+					'description' => 'The maximum fee you are willing to pay to have this title transferred to the library.',
+					'default' => 0,
+					'displayFormat' => '%0.2f',
+				];
+				$fields['acceptFee'] = [
+					'property' => 'acceptFee',
+					'type' => 'checkbox',
+					'label' => 'I will pay any fees associated with this request up to the maximum amount defined above',
+					'description' => '',
+				];
+			} else {
+				$fields['acceptFee'] = [
+					'property' => 'acceptFee',
+					'type' => 'checkbox',
+					'label' => 'I will pay any fees associated with this request',
+					'description' => '',
+				];
+			}
+		}
+		$user = UserAccount::getLoggedInUser();
+		$locations = $user->getValidPickupBranches($user->getCatalogDriver()->accountProfile->recordSource);
+		$pickupLocations = [];
+		foreach ($locations as $key => $location) {
+			if ($location instanceof Location) {
+				$pickupLocations[$location->code] = $location->displayName;
+			} else {
+				if ($key == '0default') {
+					$pickupLocations[-1] = $location;
+				}
+			}
+		}
+		$fields['pickupLocation'] = [
+			'property' => 'pickupLocation',
+			'type' => 'enum',
+			'values' => $pickupLocations,
+			'label' => 'Pickup Location',
+			'description' => 'Where you would like to pickup the title',
+			'required' => true,
+			'default' => $user->getHomeLocationCode(),
+		];
+		$fields['note'] = [
+			'property' => 'note',
+			'type' => 'textarea',
+			'label' => 'Note',
+			'description' => 'Any additional information you want us to have about this request',
+			'required' => false,
+			'default' => ($volumeInfo == null) ? '' : $volumeInfo,
+		];
+		$fields['catalogKey'] = [
+			'property' => 'catalogKey',
+			'type' => (($this->showCatalogKey && $marcRecordDriver != null) ? 'text' : 'hidden'),
+			'label' => 'Record Number',
+			'description' => 'The record number to be requested',
+			'maxLength' => 20,
+			'required' => false,
+			'default' => ($marcRecordDriver != null ? $marcRecordDriver->getId() : ''),
+		];
+		return $fields;
 	}
 }
