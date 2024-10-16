@@ -75,14 +75,32 @@ function getOclcResourceSharingForGroupsUpdates()
 				)"
 			],
 		],
-        // '' => [
-        //     'title' => 'Add the User OCLC Resource Sharing For Groups Request Table',
-        //     'description' => ' Add a table to store the ILL requests made by a patron via the OCLC Resource Sharing Request API',
-        //     // 'continueOnError' => true,
-        //     'sql' => [
-        //         "CREATE TABLE user_oclc_resource_sharing_for_groups_request"
-        //     ],
-        // ],
+		'store_active_ill_requests' => [
+			'title' => 'Store Active ILL Requests',
+			'description' => 'Add a database table to store the ILL requests made by a patron via the OCLC Resource Sharing Request API',
+			'sql' => [
+				"CREATE TABLE user_oclc_resource_sharing_for_groups_request (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					oclcRequestId INT UNIQUE DEFAULT NULL,
+					requestStatus VARCHAR(50),
+					serviceType VARCHAR(50),
+					verification VARCHAR(255),
+					oclcRequesterRegistryId INT(11) DEFAULT NULL,
+					userId INT(11) DEFAULT NULL,
+					email VARCHAR(255),
+					isbn VARCHAR(20) DEFAULT NULL,
+					title VARCHAR(255) DEFAULT NULL,
+					author VARCHAR(255) DEFAULT NULL,
+					publisher VARCHAR(255) DEFAULT NULL,
+					feeAccepted TINYINT(1) DEFAULT NULL,
+					maximumFeeAmount VARCHAR(10) DEFAULT NULL,
+					catalogKey varchar(20) DEFAULT NULL,
+					note TEXT DEFAULT NULL,
+					pickupLocation VARCHAR(75) DEFAULT NULL,
+					datePlaced DATETIME DEFAULT CURRENT_TIMESTAMP()
+				)"
+			],
+		],
 
     ];
 }
