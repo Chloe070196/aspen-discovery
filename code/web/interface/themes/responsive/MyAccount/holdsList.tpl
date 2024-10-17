@@ -52,6 +52,8 @@
 					{include file="MyAccount/palaceProjectHold.tpl" record=$record section=$sectionKey resultIndex=$smarty.foreach.recordLoop.iteration}
 				{elseif $record->type == 'interlibrary_loan' && $record->source == 'vdx'}
 					{include file="MyAccount/vdxRequest.tpl" record=$record section=$sectionKey resultIndex=$smarty.foreach.recordLoop.iteration}
+				{elseif $record->type == 'interlibrary_loan' && $record->source == 'oclcResourceSharingForGroups'}
+					{include file="MyAccount/oclcResourceSharingForGroupsRequest.tpl" record=$record section=$sectionKey resultIndex=$smarty.foreach.recordLoop.iteration}
 				{else}
 					<div class="row">
 						Unknown record type {$record->type}

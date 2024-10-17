@@ -854,6 +854,10 @@ class User extends DataObject {
 	}
 
 	function hasInterlibraryLoan(): bool {
+		return $this->hasVDXInterlibraryLoan() && $this->hasOCLCResourceSharingForGroupsInterlibraryLoan();
+	}
+
+	function hasVDXInterlibraryLoan(): bool {
 		try {
 			require_once ROOT_DIR . '/sys/VDX/VdxSetting.php';
 			require_once ROOT_DIR . '/sys/VDX/VdxForm.php';
@@ -869,6 +873,22 @@ class User extends DataObject {
 			}
 		} catch (Exception $e) {
 			//This happens if the tables aren't setup, ignore
+		}
+		return false;
+	}
+	
+	function hasOCLCResourceSharingForGroupsInterlibraryLoan(): bool {
+		try {
+			require_once ROOT_DIR . '/sys/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsSetting.php';
+			require_once ROOT_DIR . '/sys/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsForm.php';
+			$OCLCResourceSharingForGroupsSettings = new OCLCResourceSharingForGroupsSetting();
+			$homeLibrary = Library::getPatronHomeLibrary();
+			$OCLCResourceSharingForGroupsSettings->whereAdd("id={$homeLibrary->oclcResourceSharingForGroupsSettingsId}");
+			if ($OCLCResourceSharingForGroupsSettings->find(true) && !$item->atUserHomeLocation) {
+				return true;
+			}
+		} catch (Exception $e) {
+			//This happens if the tables are not installed yet
 		}
 		return false;
 	}
@@ -1798,13 +1818,22 @@ class User extends DataObject {
 			}
 
 			if ($source == 'all' || $source == 'interlibrary_loan') {
-				if ($this->hasInterlibraryLoan()) {
-					//For now, this is just VDX
+				if ($this->hasVDXInterlibraryLoan()) {
 					require_once ROOT_DIR . '/Drivers/VdxDriver.php';
 					$driver = new VdxDriver();
 					$vdxRequests = $driver->getRequests($this);
 					$allHolds = array_merge_recursive($allHolds, $vdxRequests);
 					$holdsToReturn = array_merge_recursive($holdsToReturn, $vdxRequests);
+				}
+			}
+
+			if ($source == 'all' || $source == 'interlibrary_loan') {
+				if ($this->hasOCLCResourceSharingForGroupsInterlibraryLoan()) {
+					require_once ROOT_DIR . '/Drivers/OCLCResourceSharingForGroupsDriver.php';
+					$driver = new OCLCResourceSharingForGroupsDriver();
+					$oclcResourceSharingForGroupsRequests = $driver->getRequests($this);
+					$allHolds = array_merge_recursive($allHolds, $oclcResourceSharingForGroupsRequests);
+					$holdsToReturn = array_merge_recursive($holdsToReturn, $oclcResourceSharingForGroupsRequests);
 				}
 			}
 			//Delete all existing holds
