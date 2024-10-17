@@ -69,6 +69,13 @@ class OCLCResourceSharingForGroupsDriver {
 			'success' => true,
 		];
 	}
+	public function getRequests(User $patron) {
+		$requestsSent = $this->getAllRequestsFromAspenDbForPatron($patron->id);
+		$openRequests = $this->getOpenRequests($patron->id, $requestsSent);
+		return [
+			'unavailable' => $openRequests,
+		];
+	}
 	private function getAllRequestsFromAspenDbForPatron(Int $patronId) {
 		$requestsSent = [];
 		$oclcResourceSharingForGroupsRequest = new OCLCResourceSharingForGroupsRequest();
@@ -77,5 +84,29 @@ class OCLCResourceSharingForGroupsDriver {
 			$requestsSent = $oclcResourceSharingForGroupsRequest->fetchAll();
 		}
 		return $requestsSent;
+	}
+
+
+	// create a temporary hold object so that open requests can be displayed
+	// necessary as we are using the 'Title on Hold' page to display them
+	// modelled on the VdxDriver
+	private function getOpenRequests($patronId, $requestsSent) {
+		$openRequests = [];
+		foreach ($requestsSent as $request) {
+			$curRequest = new Hold();
+			$curRequest->userId = $patronId;
+			$curRequest->type = 'interlibrary_loan';
+			$curRequest->isIll = true;
+			$curRequest->source = 'oclcResourceSharingForGroups';
+			$curRequest->sourceId = $request->catalogKey;
+			$curRequest->recordId = $request->catalogKey;
+			$curRequest->title = $request->title;
+			$curRequest->author = $request->author;
+			$curRequest->status = 'Pending';
+			$curRequest->pickupLocationName = $request->pickupLocation;
+			$curRequest->cancelable = false;
+			$openRequests[] = $curRequest;
+		}
+		return $openRequests;
 	}
 }
