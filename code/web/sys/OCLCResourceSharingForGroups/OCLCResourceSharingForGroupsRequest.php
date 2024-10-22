@@ -11,6 +11,8 @@ class OCLCResourceSharingForGroupsRequest extends DataObject {
 	public $userId;
 	public $email;
 	public $isbn;
+	public $issn;
+	public $oclcNumber;
 	public $title;
 	public $author;
 	public $edition;

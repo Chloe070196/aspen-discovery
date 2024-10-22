@@ -10,6 +10,7 @@ class OCLCResourceSharingForGroupsForm extends DataObject{
 	public $showPublisher;
 	public $showIsbn;
 	public $showIssn;
+	public $showOclcNumber;
 	public $showAcceptFee;
 	public $showMaximumFee;
 	public $feeInformationText;
@@ -56,6 +57,12 @@ class OCLCResourceSharingForGroupsForm extends DataObject{
 				'description' => 'Whether or not the user should be prompted to enter the ISBN',
 			],
 			'showIssn' => [
+				'property' => 'showIssn',
+				'type' => 'checkbox',
+				'label' => 'Show ISSN?',
+				'description' => 'Whether or not the user should be prompted to enter the ISSN',
+			],
+			'showOclcNumber' => [
 				'property' => 'showIssn',
 				'type' => 'checkbox',
 				'label' => 'Show ISSN?',
@@ -134,44 +141,93 @@ class OCLCResourceSharingForGroupsForm extends DataObject{
 			'required' => false,
 			'default' => $publisher,
 		];
-		$fields['isbn'] = [
-			'property' => 'isbn',
-			'type' => ($this->showIsbn ? 'text' : 'hidden'),
-			'label' => 'ISBN',
-			'description' => 'The ISBN of the title to request',
-			'maxLength' => 20,
-			'required' => false,
-			'default' => ($marcRecordDriver != null ? $marcRecordDriver->getCleanISBN() : ''),
-		];
-		$fields['issn'] = [
-			'property' => 'issn',
-			'type' => ($this->showIssn ? 'text' : 'hidden'),
-			'label' => 'ISBN',
-			'description' => 'The ISSN of the title to request',
-			'maxLength' => 20,
-			'required' => false,
-			'default' => ($marcRecordDriver != null ? $marcRecordDriver->getISSNs()[0] : ''),
-		];
+
+		// if an ISBN, ISSN, or OCLC number is present, pre-fill the field and only display this identifier
 		if ($marcRecordDriver != null) {
-			/** @var File_MARC_Control_Field $oclcNumber */
-			$oclcNumber = $marcRecordDriver->getMarcRecord()->getField('001');
-			if ($oclcNumber != null) {
-				$oclcNumberString = StringUtils::truncate($oclcNumber->getData(), 50);
+			if (!empty($marcRecordDriver->getCleanISBN())) {
+				$fields['isbn'] = [
+					'property' => 'isbn',
+					'type' => ($this->showIsbn ? 'text' : 'hidden'),
+					'label' => 'ISBN',
+					'description' => 'The ISBN of the title to request',
+					'maxLength' => 20,
+					'required' => true,
+					'default' => ($marcRecordDriver != null ? $marcRecordDriver->getCleanISBN() : ''),
+				];
+			} else if (!empty($marcRecordDriver->getISSNs())) {
+				$fields['issn'] = [
+					'property' => 'issn',
+					'type' => ($this->showIssn ? 'text' : 'hidden'),
+					'label' => 'ISBN',
+					'description' => 'The ISSN of the title to request',
+					'maxLength' => 20,
+					'required' => true,
+					'default' => ($marcRecordDriver != null ? $marcRecordDriver->getISSNs()[0] : ''),
+				];
+			} else if (!empty($oclcNumber != null)) {
+				/** @var File_MARC_Control_Field $oclcNumber */
+				$oclcNumber = $marcRecordDriver->getMarcRecord()->getField('001');
+				if ($oclcNumber != null) {
+					$oclcNumberString = StringUtils::truncate($oclcNumber->getData(), 50);
+				} else {
+					$oclcNumberString = '';
+				}
+				$fields['oclcNumber'] = [
+					'property' => 'oclcNumber',
+					'type' => ($this->oclcNumber ? 'text' : 'hidden'),
+					'lable' => 'OCLC Number',
+					'description' => 'The OCLC Number of the title to request',
+					'maxLength' => 50,
+					'required' => true,
+					'default' => $oclcNumberString,
+				];
 			} else {
-				$oclcNumberString = '';
+				// if no ISBN, ISSN, or OCLC number are present, then let the user pick one and fill in the field
+				$fields['uniqueIdentifierKey'] = [
+					'property' => 'uniqueIdentifierKey',
+					'type' => 'enum',
+					'label' => 'Unique Record Identifier Key',
+					'description' => 'Whether to use ISBN, ISSN, or OCLC Number to make the request',
+					'required' => true,
+					'values' => [
+						'isbn' => 'ISBN',
+						'issn' => 'ISSN',
+						'oclcNumber' => 'OCLC Number'
+					],
+				];
+				$fields['uniqueIdentifierValue'] = [
+					'property' => 'uniqueIdentifierValue', 
+					'type' => 'text',
+					'label' => 'Unique Record Identifier',
+					'description' => 'The unique identifier number',
+					'maxLength' => 20,
+					'required' => true,
+				];
 			}
 		} else {
-			$oclcNumberString = '';
+			// if no Marc Record driver is found, then let the user pick whther to submit an ISBN, ISSN, or OCLC and fill in the field
+			$fields['uniqueIdentifierKey'] = [
+				'property' => 'uniqueIdentifierKey',
+				'type' => 'enum',
+				'label' => 'Unique Record Identifier Key',
+				'description' => 'Whether to use ISBN, ISSN, or OCLC Number to make the request',
+				'required' => true,
+				'values' => [
+					'isbn' => 'ISBN',
+					'issn' => 'ISSN',
+					'oclcNumber' => 'OCLC Number'
+				],
+			];
+			$fields['uniqueIdentifierValue'] = [
+				'property' => 'uniqueIdentifierValue', 
+				'type' => 'text',
+				'label' => 'Unique Record Identifier',
+				'description' => 'The unique identifier number',
+				'maxLength' => 20,
+				'required' => true,
+			];
 		}
-		$fields['oclcNumber'] = [
-			'property' => 'oclcNumber',
-			'type' => 'hidden',
-			'label' => 'OCLC Number',
-			'description' => 'The OCLC Number',
-			'maxLength' => 50,
-			'required' => false,
-			'default' => $oclcNumberString,
-		];
+	
 		if ($this->showAcceptFee) {
 			$fields['feeInformationText'] = [
 				'property' => 'feeInformationText',
