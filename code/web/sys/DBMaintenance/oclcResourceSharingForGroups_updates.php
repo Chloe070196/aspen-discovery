@@ -89,6 +89,8 @@ function getOclcResourceSharingForGroupsUpdates()
 					userId INT(11) DEFAULT NULL,
 					email VARCHAR(255),
 					isbn VARCHAR(20) DEFAULT NULL,
+					issn VARCHAR(20) DEFAULT NULL,
+					oclcNumber VARCHAR(20) DEFAULT NULL,
 					title VARCHAR(255) DEFAULT NULL,
 					author VARCHAR(255) DEFAULT NULL,
 					publisher VARCHAR(255) DEFAULT NULL,
