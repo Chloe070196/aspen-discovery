@@ -235,24 +235,52 @@ class Record_AJAX extends Action {
 					$OCLCResourceSharingForGroupsForm = new OCLCResourceSharingForGroupsForm();
 					$OCLCResourceSharingForGroupsForm->id = $activeLibrary->OCLCResourceSharingForGroupsFormId;
 					if ($OCLCResourceSharingForGroupsForm->find(true)) {
-						//TODO: Check to see if the patron is eligible to place holds (see VDX implementation)
-						$marcRecord = new MarcRecordDriver($id);
-						$interface->assign('OCLCResourceSharingForGroupsForm', $OCLCResourceSharingForGroupsForm);
-						$OCLCResourceSharingForGroupsFormFields = $OCLCResourceSharingForGroupsForm->getFormFields($marcRecord);
-						$interface->assign('structure', $OCLCResourceSharingForGroupsFormFields);
-						$interface->assign('OCLCResourceSharingForGroupsFormFields', $interface->fetch('DataObjectUtil/ajaxForm.tpl'));
-						$results = [
-							'title' => translate([
-								'text' => 'Request Title',
-								'isPublicFacing' => true,
-							]),
-							'modalBody' => $interface->fetch("Record/vdx-request-popup.tpl"),
-							'modalButtons' => '<a href="#" class="btn btn-primary" onclick="return AspenDiscovery.Record.submitOCLCResourceSharingForGroupsRequest(\'Record\', \'' . $id . '\')">' . translate([
-									'text' => 'Place Request',
+						$accountSummary = $user->getAccountSummary();
+						if ($accountSummary->isExpired()) {
+							$results = [
+								'title' => translate([
+									'text' => 'Request Title',
 									'isPublicFacing' => true,
-								]) . '</a>',
-							'success' => true,
-						];
+								]),
+								'modalBody' => translate([
+									'text' => 'Your account is not eligible to request titles from other libraries.  Please visit the library to renew your account.',
+									'isPublicFacing' => true,
+								]),
+								'modalButtons' => '',
+								'success' => true,
+							];
+						} elseif ($user->isBlockedFromIllRequests()) {
+							$results = [
+								'title' => translate([
+									'text' => 'Request Title',
+									'isPublicFacing' => true,
+								]),
+								'modalBody' => translate([
+									'text' => 'Your account is not eligible to request titles from other libraries.  Please visit the library to update your account.',
+									'isPublicFacing' => true,
+								]),
+								'modalButtons' => '',
+								'success' => true,
+							];
+						} else {
+							$marcRecord = new MarcRecordDriver($id);
+							$interface->assign('OCLCResourceSharingForGroupsForm', $OCLCResourceSharingForGroupsForm);
+							$OCLCResourceSharingForGroupsFormFields = $OCLCResourceSharingForGroupsForm->getFormFields($marcRecord);
+							$interface->assign('structure', $OCLCResourceSharingForGroupsFormFields);
+							$interface->assign('OCLCResourceSharingForGroupsFormFields', $interface->fetch('DataObjectUtil/ajaxForm.tpl'));
+							$results = [
+								'title' => translate([
+									'text' => 'Request Title',
+									'isPublicFacing' => true,
+								]),
+								'modalBody' => $interface->fetch("Record/vdx-request-popup.tpl"),
+								'modalButtons' => '<a href="#" class="btn btn-primary" onclick="return AspenDiscovery.Record.submitOCLCResourceSharingForGroupsRequest(\'Record\', \'' . $id . '\')">' . translate([
+										'text' => 'Place Request',
+										'isPublicFacing' => true,
+									]) . '</a>',
+								'success' => true,
+							];
+						}
 					} else {
 						$results = [
 							'title' => translate([
