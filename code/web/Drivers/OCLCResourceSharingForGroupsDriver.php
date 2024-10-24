@@ -3,11 +3,27 @@ require_once ROOT_DIR . '/sys/OCLCResourceSharingForGroups/OCLCResourceSharingFo
 require_once ROOT_DIR . '/sys/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsSetting.php';
 require_once ROOT_DIR . '/sys/Utils/StringUtils.php';
 
+use League\OAuth2\Client\OptionProvider\HttpBasicAuthOptionProvider;
+use League\OAuth2\Client\Provider\GenericProvider;
+use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
+
 class OCLCResourceSharingForGroupsDriver {
+	private $accessToken;
 
 	public function submitRequest(OCLCResourceSharingForGroupsSetting $setting, User $patron, $requestFormData): array|null{
 
-		// step 1: GET AUTHENTICATION TOKEN FOR INSTITUTION ( = the library which has signed up for the service)
+		// step 1: GET AUTHENTICATION TOKEN FOR INSTITUTION
+		try {
+			if (empty($this->accessToken) || time() > $this->accessToken->expires) {
+				// FIXME: check the WSKey expiry date against today's date before attempting to fetch a token
+				$this->setAccessToken($setting);
+			}
+		} catch (Exception $e) {
+			// TODO: check which file it logs to + that it does it
+			global $logger;
+			$logger->log("Error conducting pre-submission checks for an ILL request to the Resource Sharing Requests API: $e", Logger::LOG_ERROR);
+			return null;
+		}
 
 		// step 2: INITIALISE AND POPULATE A REQUEST OBJECT
 		$newRequest = new OCLCResourceSharingForGroupsRequest();
@@ -112,4 +128,23 @@ class OCLCResourceSharingForGroupsDriver {
 		}
 		return $openRequests;
 	}
+	private function setAccessToken(OCLCResourceSharingForGroupsSetting $setting): void {
+		require_once 'oauth2_client_php_league/autoload.php';
+		$basicAuth_provider = new HttpBasicAuthOptionProvider();
+		$setup_options = [
+			'clientId' => $setting->clientKey,
+			'clientSecret' => $setting->clientSecret,
+			'urlAuthorize' => $setting->authBaseUrl . "auth", // not used for this grant type yet field still required - could set to ''
+			'urlAccessToken' => $setting->authBaseUrl . "token",
+			'urlResourceOwnerDetails' => '',
+			'redirectUri' => '',
+		];
+		$provider = new GenericProvider($setup_options, ['optionProvider' => $basicAuth_provider]);
+		try {
+			$this->accessToken = $provider->getAccessToken('client_credentials', ['scope' => $setting->scopes]);
+		} catch (IdentityProviderException $e) {
+			exit($e->getMessage());
+		};
+	}
+
 }
