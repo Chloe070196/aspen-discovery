@@ -75,7 +75,27 @@ class OCLCResourceSharingForGroupsDriver {
 		}
 
 		// step 5: SEND THE REQUEST TO THE API
-
+		try {
+			$response = $this->postToOCLCResourceSharingForGroups($setting->serviceBaseUrl, $newRequest);
+			$IllRequestCreated = json_decode(json_encode(simplexml_load_string($response)));
+			$newRequest->requestStatus = $IllRequestCreated->responses->illRequest->requestStatus;
+			$newRequest->oclcRequestId = $IllRequestCreated->responses->illRequest->requestId;
+			$newRequest->update();
+		} catch (Exception $e) {
+			global $logger;
+			$logger->log("Error submitting an ILL request to the Resource Sharing Requests API: $e", Logger::LOG_ERROR);
+			return [
+				'title' => translate([
+					'text' => 'Request Failed',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => "Could not send request to the Resource Sharing For Groups system.",
+					'isPublicFacing' => true,
+				]),
+				'success' => false,
+			];
+		}
 		return [
 			'title' => translate([
 				'text' => 'Request Sent',
@@ -94,6 +114,20 @@ class OCLCResourceSharingForGroupsDriver {
 		return [
 			'unavailable' => $openRequests,
 		];
+	}
+
+	private function postToOCLCResourceSharingForGroups(string $serviceBaseUrl, OCLCResourceSharingForGroupsRequest $newRequest): string {
+		require_once ROOT_DIR . '/sys/CurlWrapper.php';
+		$url = $serviceBaseUrl . "/requests";
+		$curl = new CurlWrapper();
+		$customHeaders = [
+			"Content-type" => "Content-type: application/json",
+			"Authorization" => "Authorization: Bearer " . $this->accessToken->getToken(),
+		];
+		$curl->addCustomHeaders($customHeaders, false);
+		$curl->curl_connect($url);
+		$response = $curl->curlPostBodyData($url, $this->formatRequestBody($newRequest));
+		return $response;
 	}
 	private function getAllRequestsFromAspenDbForPatron(Int $patronId) {
 		$requestsSent = [];
@@ -147,4 +181,31 @@ class OCLCResourceSharingForGroupsDriver {
 		};
 	}
 
+	private function formatRequestBody(OCLCResourceSharingForGroupsRequest $newRequest): object {
+		$illRequest = [];
+		$illRequest["requestStatus"] = "PROFILING";
+		$illRequest["requester"] = [
+			"institution" => [
+				"institutionId" => $newRequest->oclcRequesterRegistryId
+			],
+			"serviceType" => "LOAN",
+		];
+		$illRequest["item"] = [
+			"verification" => "item discovered on Aspen Discovery"
+		];
+		if (!empty($newRequest->isbn)) {
+			$illRequest["item"]["isbn"] = $newRequest->isbn;
+		}
+		if (!empty($newRequest->issn)) {
+			$illRequest["item"]["issn"] = $newRequest->issn;
+		}
+		if (!empty($newRequest->oclcNumber)) {
+			$illRequest["item"]["oclcNumber"] = $newRequest->oclcNumber;
+		}
+		$illRequest["patron"] = [
+			"patronApproved" => true,
+			"userId" => "{$newRequest->userId}"
+		];
+		return (object)["illRequest" => $illRequest];
+	}
 }
