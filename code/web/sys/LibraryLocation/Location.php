@@ -97,6 +97,7 @@ class Location extends DataObject {
 	public $vdxFormId;
 	public $vdxLocation;
 	public $localIllFormId;
+	public $oclcResourceSharingForGroupsLocation;
 	public $systemsToRepeatIn;
 	public $homeLink;
 	public $ptypesToAllowRenewals;

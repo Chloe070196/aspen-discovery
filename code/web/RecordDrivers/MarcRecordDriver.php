@@ -1091,13 +1091,53 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 				}
 
 				$useOCLCResourceSharingForGroups = false;
+				$oclcRSFGGroupsForLocation = [];
 				try {
 					require_once ROOT_DIR . '/sys/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsSetting.php';
-					$OCLCResourceSharingForGroupsSettings = new OCLCResourceSharingForGroupsSetting();
-					$homeLibrary = Library::getPatronHomeLibrary();
-					$OCLCResourceSharingForGroupsSettings->whereAdd("id={$homeLibrary->oclcResourceSharingForGroupsSettingsId}");
-					if ($OCLCResourceSharingForGroupsSettings->find(true) && !$item->atUserHomeLocation) {
+					require_once ROOT_DIR . '/sys/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsHoldGroup.php';
+					require_once ROOT_DIR . '/sys/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsHoldGroupLocation.php';
+					$oclcRSFGSettings = new OCLCResourceSharingForGroupsSetting();
+					$homeLibrary = Library::getActiveLibrary();
+					$oclcRSFGSettings->whereAdd("id={$homeLibrary->oclcResourceSharingForGroupsSettingsId}");
+					if ($oclcRSFGSettings->find(true)) {
 						$useOCLCResourceSharingForGroups = true;
+						$homeLocation = Location::getDefaultLocationForUser();
+						if (!empty($homeLocation)) {
+							$oclcRSFGGroupsForLocation = new OCLCResourceSharingForGroupsHoldGroupLocation();
+							$oclcRSFGGroupIds = $oclcRSFGGroupsForLocation->fetchAll('oclcResourceSharingForGroupsHoldGroupId');
+							$oclcRSFGGroups = [];
+							foreach ($oclcRSFGGroupIds as $oclcRSFGGroupId) {
+								$oclcRSFGGroup = new OCLCResourceSharingForGroupsHoldGroup();
+								$oclcRSFGGroup->id = $oclcRSFGGroupId;
+								if ($oclcRSFGGroup->find(true)) {
+									$oclcRSFGGroups[] = clone $oclcRSFGGroup;
+								}
+							}
+							
+							if ($relatedRecord->getItems() != null) {
+								foreach ($relatedRecord->getItems() as $itemDetail) {
+									if ($itemDetail->variationId == $variationId || $variationId == 'any') {
+										//Only check holdable items
+										if ($itemDetail->holdable) {
+											//The patron's home location is always valid!
+											if ($itemDetail->locationCode == $homeLocation->code) {
+												$useOCLCResourceSharingForGroups = false;
+												break;
+											}
+											foreach ($oclcRSFGGroups as $oclcRSFGGroup) {
+												if (in_array($itemDetail->locationCode, $oclcRSFGGroup->getLocationCodes())) {
+													$useOCLCResourceSharingForGroups = false;
+													break;
+												}
+											}
+										}
+										if (!$useOCLCResourceSharingForGroups) {
+											break;
+										}
+									}
+								}
+							}
+						}
 					}
 				} catch (Exception $e) {
 					//This happens if the tables are not installed yet
