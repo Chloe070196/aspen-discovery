@@ -17,8 +17,10 @@ function getOclcResourceSharingForGroupsUpdates()
 			'sql' => [
 				"INSERT INTO permissions (name, sectionName, requiredModule, weight, description) VALUES ( 'Administer OCLC Resource Sharing For Groups Settings','ILL Integration','OCLC Resource Sharing For Groups', 0, 'Allows the user to administer the integration with OCLC Resource Sharing For Groups')",
 				"INSERT INTO permissions (name, sectionName, requiredModule, weight, description) VALUES ( 'Administer OCLC Resource Sharing For Groups Forms','ILL Integration','OCLC Resource Sharing For Groups', 0, 'Allows the user to administer the OCLC Resource Sharing For Groups ILL request forms')",
+				"INSERT INTO permissions (name, sectionName, requiredModule, weight, description) VALUES ( 'Administer OCLC Resource Sharing For Groups Hold Groups','ILL Integration','OCLC Resource Sharing For Groups', 0, 'Allows the user to administer the OCLC Resource Sharing For Groups ILL hold groups')",
 				"INSERT INTO role_permissions(roleId, permissionId) VALUES ((SELECT roleId from roles where name='opacAdmin'), (SELECT id from permissions where name='Administer OCLC Resource Sharing For Groups Settings'))",
-				"INSERT INTO role_permissions(roleId, permissionId) VALUES ((SELECT roleId from roles where name='opacAdmin'), (SELECT id from permissions where name='Administer OCLC Resource Sharing For Groups Forms'))"
+				"INSERT INTO role_permissions(roleId, permissionId) VALUES ((SELECT roleId from roles where name='opacAdmin'), (SELECT id from permissions where name='Administer OCLC Resource Sharing For Groups Forms'))",
+				"INSERT INTO role_permissions(roleId, permissionId) VALUES ((SELECT roleId from roles where name='opacAdmin'), (SELECT id from permissions where name='Administer OCLC Resource Sharing For Groups Hold Groups'))"
 			],
 			// TODO:consider an 'administer forms for their library' permission
 		],
@@ -105,6 +107,27 @@ function getOclcResourceSharingForGroupsUpdates()
 				)"
 			],
 		],
-
+		'store_oclc_resource_sharing_for_groups_hold_group_location' => [
+			'title' => 'OCLC Resource Sharing For Groups Hold Groups Location',
+			'description' => 'Add a database table to store OCLC Resource Sharing For Groups hold groups location',
+			'sql' => [
+				"CREATE TABLE oclc_resource_sharing_for_groups_hold_group_location (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					oclcResourceSharingForGroupsHoldGroupId INT UNIQUE DEFAULT NULL,
+					locationId INT UNIQUE DEFAULT NULL
+				)"
+			],
+		],
+		'store_oclc_resource_sharing_for_groups_hold_group' => [
+			'title' => 'OCLC Resource Sharing For Groups Hold Groups',
+			'description' => 'Add a database table to store OCLC Resource Sharing For Groups hold groups',
+			'sql' => [
+				"CREATE TABLE oclc_resource_sharing_for_groups_hold_group (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					oclcResourceSharingForGroupsHoldGroupId INT UNIQUE DEFAULT NULL,
+					locationId INT UNIQUE DEFAULT NULL
+				)"
+			],
+		],
 	];
 }
