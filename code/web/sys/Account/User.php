@@ -1882,10 +1882,27 @@ class User extends DataObject {
 			if ($source == 'all' || $source == 'interlibrary_loan') {
 				if ($this->hasOCLCResourceSharingForGroupsInterlibraryLoan()) {
 					require_once ROOT_DIR . '/Drivers/OCLCResourceSharingForGroupsDriver.php';
-					$driver = new OCLCResourceSharingForGroupsDriver();
-					$oclcResourceSharingForGroupsRequests = $driver->getRequests($this);
-					$allHolds = array_merge_recursive($allHolds, $oclcResourceSharingForGroupsRequests);
-					$holdsToReturn = array_merge_recursive($holdsToReturn, $oclcResourceSharingForGroupsRequests);
+					require_once ROOT_DIR . '/sys/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsSetting.php';
+					$settings = new OCLCResourceSharingForGroupsSetting();
+					if ($settings->find(true)) {
+						$driver = new OCLCResourceSharingForGroupsDriver();
+						$oclcResourceSharingForGroupsRequests = $driver->getRequests($this, $settings);
+						$allHolds = array_merge_recursive($allHolds, $oclcResourceSharingForGroupsRequests);
+						$holdsToReturn = array_merge_recursive($holdsToReturn, $oclcResourceSharingForGroupsRequests);
+					} else {
+						$results = [
+							'title' => translate([
+								'text' => 'Invalid Configuration',
+								'isPublicFacing' => true,
+							]),
+							'message' => translate([
+								'text' => "OCLC Resource Sharing For Groups Settings do not exist, please contact the library to make a request.",
+								'isPublicFacing' => true,
+							]),
+							'success' => false,
+						];
+					}
+
 				}
 			}
 			//Delete all existing holds
