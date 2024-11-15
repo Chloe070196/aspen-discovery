@@ -108,13 +108,36 @@ class OCLCResourceSharingForGroupsDriver {
 			'success' => true,
 		];
 	}
-	public function getRequests(User $patron) {
+
+	public function getRequests(User $patron, $setting) {
 		$requestsSent = $this->getAllRequestsFromAspenDbForPatron($patron->id);
-		$openRequests = $this->getOpenRequests($patron->id, $requestsSent);
+		$openRequests = [];
+		$processedRequests = [];
+		foreach ($requestsSent as $requestInAspenDB) {
+			$requestInOclcRS4G = $this->getRequestFromOCLCResourceSharingForGroupsWithId($setting, $requestInAspenDB->oclcRequestId);
+			if (!empty($requestInOclcRS4G)) {
+				$requestInAspenDB->requestStatus = $requestInOclcRS4G->illRequest->requestStatus;
+				$requestInAspenDB->update();
+				if(
+					$requestInAspenDB->requestStatus == "REVIEW" ||
+					$requestInAspenDB->requestStatus == "REVIEWING"
+				){
+					$openRequests[] = $this->createTemporaryHold($patron->id, $requestInAspenDB);
+				}
+				if(
+					$requestInAspenDB->requestStatus == "RECEIVED" ||
+					$requestInAspenDB->requestStatus == "CLOSED" 
+				){
+					$processedRequests[] = $this->createTemporaryHold($patron->id, $requestInAspenDB);
+				}
+			}
+		}
 		return [
 			'unavailable' => $openRequests,
+			'available' => $processedRequests
 		];
 	}
+
 	private function postToOCLCResourceSharingForGroups(string $serviceBaseUrl, OCLCResourceSharingForGroupsRequest $newRequest) {
 		require_once ROOT_DIR . '/sys/CurlWrapper.php';
 		$url = $serviceBaseUrl . "/requests";
@@ -128,39 +151,90 @@ class OCLCResourceSharingForGroupsDriver {
 		$response = $curl->curlPostBodyData($url, $this->formatRequestBody($newRequest));
 		return $response;
 	}
-	private function getAllRequestsFromAspenDbForPatron(Int $patronId) {
-		$requestsSent = [];
-		$oclcResourceSharingForGroupsRequest = new OCLCResourceSharingForGroupsRequest();
-		$oclcResourceSharingForGroupsRequest->whereAdd("userId=" . $patronId);
-		if (!empty($oclcResourceSharingForGroupsRequest->find())) {
-			$requestsSent = $oclcResourceSharingForGroupsRequest->fetchAll();
+
+	private function getAllRequestsFromOCLCResourceSharingForGroupsForPatron(OCLCResourceSharingForGroupsSetting $setting, Int $patronId) {
+		try {
+			if (empty($this->accessToken) || time() > $this->accessToken->expires) {
+				// FIXME: check the WSKey expiry date against today's date before attempting to fetch a token
+				$this->setAccessToken($setting);
+			}
+		} catch (Exception $e) {
+			// TODO: check which file it logs to + that it does it
+			global $logger;
+			$logger->log("Error conducting pre-submission checks for an ILL request to the Resource Sharing Requests API: $e", Logger::LOG_ERROR);
+			return null;
 		}
-		return $requestsSent;
+	
+		require_once ROOT_DIR . '/sys/CurlWrapper.php';
+		$searchTerm = "searchTerm=patronID";
+		$searchValue = "searchValue=" . "$patronId";
+		$url = $setting->serviceBaseUrl . "/requests" . "?" . $searchTerm . "&" . $searchValue;
+		$curl = new CurlWrapper();
+		$customHeaders = [
+			"Authorization" => "Authorization: Bearer " . $this->accessToken->getToken(),
+		];
+		$curl->addCustomHeaders($customHeaders, false);
+		$curl->curl_connect($url);
+		$response = $curl->curlGetPage($url);
+		// FIXME: refactor how the "xml" response is parsed
+		return json_decode(json_encode(simplexml_load_string($response)))->responses;
 	}
 
-
-	// create a temporary hold object so that open requests can be displayed
-	// necessary as we are using the 'Title on Hold' page to display them
-	// modelled on the VdxDriver
-	private function getOpenRequests($patronId, $requestsSent) {
-		$openRequests = [];
-		foreach ($requestsSent as $request) {
-			$curRequest = new Hold();
-			$curRequest->userId = $patronId;
-			$curRequest->type = 'interlibrary_loan';
-			$curRequest->isIll = true;
-			$curRequest->source = 'oclcResourceSharingForGroups';
-			$curRequest->sourceId = $request->catalogKey;
-			$curRequest->recordId = $request->catalogKey;
-			$curRequest->title = $request->title;
-			$curRequest->author = $request->author;
-			$curRequest->status = 'Pending';
-			$curRequest->pickupLocationName = $request->pickupLocation;
-			$curRequest->cancelable = false;
-			$openRequests[] = $curRequest;
+	private function getRequestFromOCLCResourceSharingForGroupsWithId(OCLCResourceSharingForGroupsSetting $setting, Int $oclcRequestId) {
+		try {
+			if (empty($this->accessToken)) {
+				// FIXME: check the WSKey expiry date against today's date before attempting to fetch a token
+				$this->setAccessToken($setting);
+			}
+		} catch (Exception $e) {
+			global $logger;
+			$logger->log("Error conducting pre-submission checks for an ILL request to the Resource Sharing Requests API: $e", Logger::LOG_ERROR);
+			return null;
 		}
-		return $openRequests;
+
+		require_once ROOT_DIR . '/sys/CurlWrapper.php';
+		$url = $setting->serviceBaseUrl . "/requests" . "/" . $oclcRequestId;
+		$curl = new CurlWrapper();
+		$customHeaders = [
+			"Authorization" => "Authorization: Bearer " . $this->accessToken->getToken(),
+		];
+		try {
+			$curl->addCustomHeaders($customHeaders, false);
+			$curl->curl_connect($url);
+			$response = $curl->curlGetPage($url);
+			return json_decode(json_encode(simplexml_load_string($response)))->responses;
+		} catch (Exception $e) {}
 	}
+
+	public function getAllRequestsFromAspenDbForPatron(Int $patronId) {
+		$requestsToProcess = [];
+		$request = new OCLCResourceSharingForGroupsRequest();
+		$request->userId = $patronId;
+		$request->find();
+		while ($request->fetch()) {
+			if (empty($request->vdxId) && ($request->status != 'Not found in OCLC Resource Sharing For Groups' && $request->status != 'CANCELLED')) {
+				$requestsToProcess[] = clone $request;
+			}
+		}
+		return $requestsToProcess;
+	}
+
+	private function createTemporaryHold($patronId, $request) {
+		$curRequest = new Hold();
+		$curRequest->userId = $patronId;
+		$curRequest->type = 'interlibrary_loan';
+		$curRequest->isIll = true;
+		$curRequest->source = 'oclcResourceSharingForGroups';
+		$curRequest->sourceId = $request->catalogKey;
+		$curRequest->recordId = $request->catalogKey;
+		$curRequest->title = $request->title;
+		$curRequest->author = $request->author;
+		$curRequest->status = $request->requestStatus;
+		$curRequest->pickupLocationName = $request->pickupLocation;
+		$curRequest->cancelable = false;
+		return $curRequest;
+	}
+
 	private function setAccessToken(OCLCResourceSharingForGroupsSetting $setting): void {
 		require_once 'oauth2_client_php_league/autoload.php';
 		$basicAuth_provider = new HttpBasicAuthOptionProvider();
