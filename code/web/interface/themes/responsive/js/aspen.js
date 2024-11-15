@@ -6495,6 +6495,32 @@ AspenDiscovery.Account = (function () {
 			return false;
 		},
 
+		cancelOCLCResourceSharingForGroupsRequest: function (patronId, requestId, cancelId) {
+			if (confirm("Are you sure you want to cancel this request?")) {
+				var ajaxUrl = Globals.path + "/MyAccount/AJAX?method=cancelOCLCResourceSharingForGroupsRequest&patronId=" + patronId + "&cancelId=" + cancelId;
+				$.ajax({
+					url: ajaxUrl,
+					cache: false,
+					success: function (data) {
+						if (data.success) {
+							AspenDiscovery.showMessage("Request Cancelled", data.message, true);
+							//remove the row from the holds list
+							$("#oclcResourceSharingForGroupsHold_" + requestId ).hide();
+							AspenDiscovery.Account.loadMenuData();
+						} else {
+							AspenDiscovery.showMessage("Error Cancelling Request", data.message, false);
+						}
+					},
+					dataType: 'json',
+					async: false,
+					error: function () {
+						AspenDiscovery.showMessage("Error Cancelling Request", "An error occurred processing your request.  Please try again in a few minutes.", false);
+					}
+				});
+			}
+			return false;
+		},
+
 		changeAccountSort: function (newSort, sortParameterName) {
 			if (typeof sortParameterName === 'undefined') {
 				sortParameterName = 'accountSort'

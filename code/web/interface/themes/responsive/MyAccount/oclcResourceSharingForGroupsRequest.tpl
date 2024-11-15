@@ -107,8 +107,7 @@
 			<div class="col-xs-9 col-sm-8 col-md-4 col-lg-3">
 				<div class="btn-group btn-group-vertical btn-block">
 					{if $record->cancelable}
-						{* First step in cancelling a hold is now fetching confirmation message, with better labeled buttons. *}
-						<button onclick="return AspenDiscovery.Account.cancelVdxRequest('{$record->userId}', '{$record->sourceId}', '{$record->cancelId}');" class="btn btn-sm btn-warning">{translate text="Cancel Request" isPublicFacing=true}</button>
+						<button onclick="return AspenDiscovery.Account.cancelOCLCResourceSharingForGroupsRequest('{$record->userId}', '{$record->sourceId}', '{$record->cancelId}');" class="btn btn-sm btn-warning">{translate text="Cancel Request" isPublicFacing=true}</button>
 					{/if}
 				</div>
 				{if !empty($showWhileYouWait)}

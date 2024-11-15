@@ -138,7 +138,41 @@ class OCLCResourceSharingForGroupsDriver {
 		];
 	}
 
-	private function postToOCLCResourceSharingForGroups(string $serviceBaseUrl, OCLCResourceSharingForGroupsRequest $newRequest) {
+	public function cancelRequest(OCLCResourceSharingForGroupsSetting $setting, int $oclcRequestId) {
+			$this->updateRequestInOCLCResourceSharingForGroups($setting, $oclcRequestId, 'CANCEL');
+			return [
+				'success' => 'true',
+				'message' => translate([
+					'text' => 'Your request was cancelled successfully',
+					'isPublicFacing' => true,
+				]),
+			];
+	}
+
+	private function updateRequestInOCLCResourceSharingForGroups(OCLCResourceSharingForGroupsSetting $setting, int $oclcRequestId, $requestAction): object {
+		try {
+			if (empty($this->accessToken)) {
+				$this->setAccessToken($setting);
+			}
+		} catch (Exception $e) {
+			global $logger;
+			$logger->log("Error conducting pre-submission checks for an ILL request to the Resource Sharing Requests API: $e", Logger::LOG_ERROR);
+			return null;
+		}
+
+		require_once ROOT_DIR . '/sys/CurlWrapper.php';
+		$url = $setting->serviceBaseUrl . "/requests" . "/" . $oclcRequestId . "/" . $requestAction;
+		$curl = new CurlWrapper();
+		$customHeaders = [
+			"Authorization" => "Authorization: Bearer " . $this->accessToken->getToken(),
+		];
+		$curl->addCustomHeaders($customHeaders, false);
+		$curl->curl_connect($url);
+		$response = $curl->curlGetPage($url);
+		return json_decode(json_encode(simplexml_load_string($response)))->responses;
+	}
+
+	private function postToOCLCResourceSharingForGroups(string $serviceBaseUrl, OCLCResourceSharingForGroupsRequest $newRequest): object {
 		require_once ROOT_DIR . '/sys/CurlWrapper.php';
 		$url = $serviceBaseUrl . "/requests";
 		$curl = new CurlWrapper();
@@ -231,7 +265,11 @@ class OCLCResourceSharingForGroupsDriver {
 		$curRequest->author = $request->author;
 		$curRequest->status = $request->requestStatus;
 		$curRequest->pickupLocationName = $request->pickupLocation;
+		$curRequest->cancelId = $request->oclcRequestId;
 		$curRequest->cancelable = false;
+		if ($request->requestStatus == 'REVIEW' || $request->requestStatus == 'REVIEWING') {
+			$curRequest->cancelable = true;
+		}
 		return $curRequest;
 	}
 
