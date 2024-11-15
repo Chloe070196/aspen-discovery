@@ -975,7 +975,7 @@ class Library extends DataObject {
 				'uniqueProperty' => true,
 				'forcesReindex' => true,
 				'required' => true,
-				'maxLength' => 80,
+				'maxLength' => 255,
 				'editPermissions' => ['Library Domain Settings'],
 			],
 			'accountProfileId' => [

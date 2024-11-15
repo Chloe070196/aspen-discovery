@@ -218,6 +218,15 @@ function getUpdates24_11_00(): array {
 				"ALTER TABLE ebscohost_settings MODIFY COLUMN profilePwd VARCHAR(255)"
 			]
 		], // ebsco_passwords_are_stored_as_hash
+		'allow_longer_library_names' => [
+			'title' => 'Allow Longer Library Names',
+			'description' => 'allow for longer strings so longer library names are not truncated',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE library MODIFY COLUMN displayName VARCHAR(255)",
+				"ALTER TABLE location MODIFY COLUMN displayName VARCHAR(255)"
+			]
+		],
 
 		//pedro - PTFS-Europe
 
