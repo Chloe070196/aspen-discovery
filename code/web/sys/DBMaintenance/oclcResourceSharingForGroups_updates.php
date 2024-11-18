@@ -60,6 +60,13 @@ function getOclcResourceSharingForGroupsUpdates()
 				"ALTER TABLE library ADD oclcResourceSharingForGroupsFormId INT NOT NULL DEFAULT -1",
 			],
 		],
+		'add_oclc_resource_sharing_for_groups_registry_id_to_location' => [
+			'title' => 'Add OCLC Resource Sharing For Groups Settings Id To Location',
+			'description' => 'Add an oclcRegistryId property to locations to use when patrons submit, view, or manage ILL requests',
+			'sql' => [
+				"ALTER TABLE location ADD oclcRegistryId INT NOT NULL DEFAULT -1",
+			],
+		],
 		'create_oclc_resource_sharing_for_groups_setting_table' => [
 			'title' => 'Add the OCLC Resource Sharing For Groups Setting Table',
 			'description' => 'Add a table to store the different OCLC resource settings (profiles) so that different libraries in one Aspen system can have or share different settings',
@@ -69,7 +76,6 @@ function getOclcResourceSharingForGroupsUpdates()
 					name VARCHAR(50),
 					clientKey VARCHAR(255) NOT NULL,
 					clientSecret VARCHAR(255) NOT NULL,
-					oclcRegistryId INT NOT NULL,
 					serviceBaseUrl VARCHAR(255) NOT NULL,
 					authBaseUrl VARCHAR(255) NOT NULL DEFAULT 'https://oauth.oclc.org/',
 					urlResourceOwnerDetails VARCHAR(255),

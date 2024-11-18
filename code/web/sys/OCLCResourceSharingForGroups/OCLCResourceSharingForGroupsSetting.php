@@ -6,7 +6,6 @@ class OCLCResourceSharingForGroupsSetting extends DataObject {
 	public $name;
 	public $clientKey; 
 	public $clientSecret;
-	public $oclcRegistryId;
 	public $serviceBaseUrl;
 	public $authBaseUrl;
 	public $scopes;
@@ -47,13 +46,6 @@ class OCLCResourceSharingForGroupsSetting extends DataObject {
 				'type' => 'storedPassword',
 				'label' => 'OCLC WSKey Secret',
 				'description' => 'The Secret of the OCLC-issued WSKey to be used for authentication when making requests to Resource Sharing Requests APIs',
-				'hideInLists' => true,
-			],
-			'oclcRegistryId' => [
-				'property' => 'oclcRegistryId',
-				'type' => 'text',
-				'label' => 'OCLC RegistryId',
-				'description' => 'The OCLC registryId assigned to your institution',
 				'hideInLists' => true,
 			],
 			'serviceBaseUrl' => [ // may be redundant - might not change
