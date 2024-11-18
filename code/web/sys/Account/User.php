@@ -1883,10 +1883,11 @@ class User extends DataObject {
 				if ($this->hasOCLCResourceSharingForGroupsInterlibraryLoan()) {
 					require_once ROOT_DIR . '/Drivers/OCLCResourceSharingForGroupsDriver.php';
 					require_once ROOT_DIR . '/sys/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsSetting.php';
-					$settings = new OCLCResourceSharingForGroupsSetting();
-					if ($settings->find(true)) {
+					$OCLCResourceSharingForGroupsSettings = new OCLCResourceSharingForGroupsSetting();
+					$OCLCResourceSharingForGroupsSettings->whereAdd("id=" . Library::getActiveLibrary()->oclcResourceSharingForGroupsSettingsId);
+					if ($OCLCResourceSharingForGroupsSettings->find(true)) {
 						$driver = new OCLCResourceSharingForGroupsDriver();
-						$oclcResourceSharingForGroupsRequests = $driver->getRequests($this, $settings);
+						$oclcResourceSharingForGroupsRequests = $driver->getRequests($this, $OCLCResourceSharingForGroupsSettings);
 						$allHolds = array_merge_recursive($allHolds, $oclcResourceSharingForGroupsRequests);
 						$holdsToReturn = array_merge_recursive($holdsToReturn, $oclcResourceSharingForGroupsRequests);
 					} else {
