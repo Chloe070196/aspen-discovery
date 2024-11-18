@@ -7,7 +7,6 @@ class OCLCResourceSharingForGroupsSetting extends DataObject {
 	public $clientKey; 
 	public $clientSecret;
 	public $oclcSymbol;
-	public $oclcRegistryId;
 	public $serviceBaseUrl;
 	public $authBaseUrl;
 	public $scopes;
@@ -51,13 +50,6 @@ class OCLCResourceSharingForGroupsSetting extends DataObject {
 				'type' => 'text',
 				'label' => 'OCLC Symbol',
 				'description' => 'The OCLC Symbol assigned to your institution',
-				'hideInLists' => true,
-			],
-			'oclcRegistryId' => [
-				'property' => 'oclcRegistryId',
-				'type' => 'text',
-				'label' => 'OCLC RegistryId',
-				'description' => 'The OCLC registryId assigned to your institution',
 				'hideInLists' => true,
 			],
 			'serviceBaseUrl' => [ // may be redundant - might not change

@@ -96,6 +96,7 @@ class Location extends DataObject {
 	public $repeatInCloudSource;
 	public $vdxFormId;
 	public $vdxLocation;
+	public $oclcRegistryId;
 	public $oclcResourceSharingForGroupsLocation;
 	public $systemsToRepeatIn;
 	public $homeLink;
@@ -262,6 +263,13 @@ class Location extends DataObject {
 			while ($vdxForm->fetch()) {
 				$vdxForms[$vdxForm->id] = $vdxForm->name;
 			}
+		}
+
+		require_once ROOT_DIR . '/sys/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsSetting.php';
+		$oclcRS4GActive = false;
+		$oclcRS4GSettings = new OCLCResourceSharingForGroupsSetting();
+		if ($oclcRS4GSettings->find(true)) {
+			$oclcRS4GActive = true;
 		}
 
 		$hasScoping = false;
@@ -1054,6 +1062,13 @@ class Location extends DataObject {
 						'label' => 'VDX Form',
 						'description' => 'The form to use when submitting VDX requests',
 					],
+					'oclcRegistryId' => [
+						'property' => 'oclcRegistryId',
+						'type' => 'text',
+						'label' => 'OCLC Registry Id',
+						'description' => 'The Registry ID of your WorldShare institution',
+						'maxLength' => 50,
+					],
 				],
 			],
 		];
@@ -1408,8 +1423,15 @@ class Location extends DataObject {
 			unset($structure['curbsidePickupSettings']);
 		}
 
-		if (!$vdxActive) {
+		if (!$vdxActive && !$oclcRS4GActive) {
 			unset($structure['interLibraryLoanSection']);
+		}
+		if (!$vdxActive) {
+			unset($structure['interLibraryLoanSection']['properties']['vdxLocation']);
+			unset($structure['interLibraryLoanSection']['properties']['vdxFormId']);
+		}
+		if (!$oclcRS4GActive) {
+			unset($structure['interLibraryLoanSection']['properties']['oclcRegistryId']);
 		}
 		return $structure;
 	}

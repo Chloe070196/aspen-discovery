@@ -9,6 +9,11 @@ use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 
 class OCLCResourceSharingForGroupsDriver {
 	private $accessToken;
+	private $registryId;
+
+	public function __construct() {
+		$this->registryId = Location::getUserHomeLocation()->oclcRegistryId;
+	}
 
 	public function submitRequest(OCLCResourceSharingForGroupsSetting $setting, User $patron, $requestFormData): array|null{
 
@@ -40,7 +45,7 @@ class OCLCResourceSharingForGroupsDriver {
 		$newRequest->catalogKey = strip_tags($requestFormData["catalogKey"]);
 		$newRequest->status = "NEW";
 		$newRequest->note = strip_tags($requestFormData["note"]);
-		$newRequest->oclcRequesterRegistryId = $setting->oclcRegistryId;
+		$newRequest->oclcRequesterRegistryId = $this->registryId;
 
 		// further populate newRequest using patron-related data
 		$newRequest->userId = $patron->id;
@@ -286,7 +291,7 @@ class OCLCResourceSharingForGroupsDriver {
 		];
 		$provider = new GenericProvider($setup_options, ['optionProvider' => $basicAuth_provider]);
 		try {
-			$this->accessToken = $provider->getAccessToken('client_credentials', ['scope' => $setting->scopes]);
+			$this->accessToken = $provider->getAccessToken('client_credentials', ['scope' => $setting->scopes . " context:" . $this->registryId]);
 		} catch (IdentityProviderException $e) {
 			exit($e->getMessage());
 		};
