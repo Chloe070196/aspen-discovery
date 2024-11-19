@@ -890,7 +890,7 @@ class User extends DataObject {
 	}
 
 	function hasInterlibraryLoan(): bool {
-		return $this->hasVDXInterlibraryLoan() && $this->hasOCLCResourceSharingForGroupsInterlibraryLoan();
+		return $this->hasVDXInterlibraryLoan() || $this->hasOCLCResourceSharingForGroupsInterlibraryLoan();
 	}
 
 	function hasVDXInterlibraryLoan(): bool {
