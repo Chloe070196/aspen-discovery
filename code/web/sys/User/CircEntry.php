@@ -25,7 +25,7 @@ abstract class CircEntry extends DataObject {
 	 */
 	public function getRecordDriver() : GroupedWorkSubDriver|false {
 		if ($this->_recordDriver == null) {
-			if ($this->type == 'ils') {
+			if ($this->type == 'ils' || ($this->type == 'interlibrary_loan' && $this->source == 'oclcResourceSharingForGroups')) {
 				require_once ROOT_DIR . '/RecordDrivers/MarcRecordDriver.php';
 				$this->_recordDriver = new MarcRecordDriver($this->recordId);
 				if (!$this->_recordDriver->isValid()) {
@@ -61,6 +61,12 @@ abstract class CircEntry extends DataObject {
 				if (!$this->_recordDriver->isValid()) {
 					$this->_recordDriver = false;
 				}
+			// } elseif ($this->type == 'interlibrary_loan' && $this->source == 'oclcResourceSharingForGroups') {
+			// 	require_once ROOT_DIR . '/RecordDrivers/OverDriveRecordDriver.php';
+			// 	$this->_recordDriver = new OverDriveRecordDriver($this->recordId);
+			// 	if (!$this->_recordDriver->isValid()) {
+			// 		$this->_recordDriver = false;
+			// 	}
 			} else {
 				$this->_recordDriver = false;
 			}
