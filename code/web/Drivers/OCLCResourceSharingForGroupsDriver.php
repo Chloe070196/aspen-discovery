@@ -114,7 +114,35 @@ class OCLCResourceSharingForGroupsDriver {
 		];
 	}
 
-	public function getRequests(User $patron, $setting) {
+	public function getAccountSummary(User $user): AccountSummary {
+		[
+			$existingId,
+			$summary,
+		] = $user->getCachedAccountSummary('oclcResourceSharingForGroups');
+
+		if ($summary === null || isset($_REQUEST['reload'])) {
+			//Get account information from api
+			require_once ROOT_DIR . '/sys/User/AccountSummary.php';
+			$summary = new AccountSummary();
+			$summary->userId = $user->id;
+			$summary->source = 'oclcResourceSharingForGroups';
+			$summary->resetCounters();
+
+			$settings = new OCLCResourceSharingForGroupsSetting();
+			$homeLibrary = Library::getPatronHomeLibrary();
+			$settings->whereAdd("id={$homeLibrary->oclcResourceSharingForGroupsSettingsId}");
+			if($settings->find()) {
+				$settings->fetch();
+			}
+			$requests = $this->getRequests($user, $settings);
+			$summary->numUnavailableHolds = count($requests['unavailable']);
+			$summary->numAvailableHolds = count($requests['available']);
+		}
+
+		return $summary;
+	}
+
+	public function getRequests(User $patron, $setting): array {
 		$requestsSent = $this->getAllRequestsFromAspenDbForPatron($patron->id);
 		$openRequests = [];
 		$processedRequests = [];
