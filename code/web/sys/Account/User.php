@@ -1858,9 +1858,6 @@ class User extends DataObject {
 					$allHolds = array_merge_recursive($allHolds, $vdxRequests);
 					$holdsToReturn = array_merge_recursive($holdsToReturn, $vdxRequests);
 				}
-			}
-
-			if ($source == 'all' || $source == 'interlibrary_loan') {
 				if ($this->hasOCLCResourceSharingForGroupsInterlibraryLoan()) {
 					require_once ROOT_DIR . '/Drivers/OCLCResourceSharingForGroupsDriver.php';
 					require_once ROOT_DIR . '/sys/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsSetting.php';
@@ -2043,9 +2040,9 @@ class User extends DataObject {
 			uasort($holdsToReturn['unavailable'], $holdSort);
 		}
 
-		if ($source == 'interlibrary_loan') {
-			unset($holdsToReturn['available']);
-		}
+		// if ($source == 'interlibrary_loan') {
+		// 	unset($holdsToReturn['available']);
+		// }
 
 		return $holdsToReturn;
 	}
