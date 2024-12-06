@@ -15,7 +15,7 @@ class OCLCResourceSharingForGroupsDriver {
 		$this->registryId = Location::getUserHomeLocation()->oclcRegistryId;
 	}
 
-	public function submitRequest(OCLCResourceSharingForGroupsSetting $setting, User $patron, $requestFormData): array|null{
+	public function submitRequest(OCLCResourceSharingForGroupsSetting $setting, User $patron, $requestFormData): array {
 
 		// step 1: GET AUTHENTICATION TOKEN FOR INSTITUTION
 		try {
@@ -26,8 +26,18 @@ class OCLCResourceSharingForGroupsDriver {
 		} catch (Exception $e) {
 			// TODO: check which file it logs to + that it does it
 			global $logger;
-			$logger->log("Error conducting pre-submission checks for an ILL request to the Resource Sharing Requests API: $e", Logger::LOG_ERROR);
-			return null;
+			$logger->log("Error conducting pre-submission checks for an ILL request to the Resource Sharing Requests API: $e", Logger::LOG_DEBUG);
+			return [
+				'title' => translate([
+					'text' => 'Request Failed',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => "Could not send request to the Resource Sharing For Groups system.",
+					'isPublicFacing' => true,
+				]),
+				'success' => false,
+			];
 		}
 
 		// step 2: INITIALISE AND POPULATE A REQUEST OBJECT
@@ -210,7 +220,17 @@ class OCLCResourceSharingForGroupsDriver {
 			// TODO: check which file it logs to + that it does it
 			global $logger;
 			$logger->log("Error conducting pre-submission checks for an ILL request to the Resource Sharing Requests API: $e", Logger::LOG_ERROR);
-			return null;
+			return [
+				'title' => translate([
+					'text' => 'Request Failed',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => "Could not send request to the Resource Sharing For Groups system.",
+					'isPublicFacing' => true,
+				]),
+				'success' => false,
+			];
 		}
 	
 		require_once ROOT_DIR . '/sys/CurlWrapper.php';
@@ -237,7 +257,17 @@ class OCLCResourceSharingForGroupsDriver {
 		} catch (Exception $e) {
 			global $logger;
 			$logger->log("Error conducting pre-submission checks for an ILL request to the Resource Sharing Requests API: $e", Logger::LOG_ERROR);
-			return null;
+			return [
+				'title' => translate([
+					'text' => 'Request Failed',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => "Could not send request to the Resource Sharing For Groups system.",
+					'isPublicFacing' => true,
+				]),
+				'success' => false,
+			];
 		}
 
 		require_once ROOT_DIR . '/sys/CurlWrapper.php';
