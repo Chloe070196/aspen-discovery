@@ -381,7 +381,6 @@ class OCLCResourceSharingForGroupsDriver {
 		$newRequest->isbn = strip_tags($requestFormData["isbn"]);
 		$newRequest->issn = strip_tags($requestFormData["issn"]);
 		$newRequest->oclcNumber = strip_tags($requestFormData["oclcNumber"]);
-		$newRequest->{$requestFormData["uniqueIdentifierKey"]} = $requestFormData["uniqueIdentifierValue"];
 		$newRequest->feeAccepted =  (isset($requestFormData['acceptFee']) && $requestFormData['acceptFee'] == 'true') ? 1 : 0;
 		$newRequest->maximumFeeAmount = strip_tags($requestFormData["maximumFeeAmount"]);
 		$newRequest->catalogKey = strip_tags($requestFormData["catalogKey"]);
