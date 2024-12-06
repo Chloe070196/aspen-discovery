@@ -18,7 +18,42 @@ class OCLCResourceSharingForGroupsDriver {
 	// Controllers
 
 	public function cancelRequest(OCLCResourceSharingForGroupsSetting $setting, int $oclcRequestId): array {
-		$this->updateRequestInOCLCResourceSharingForGroups($setting, $oclcRequestId, 'CANCEL');
+		try {
+			if (empty($this->accessToken)) {
+				$this->setAccessToken($setting);
+			}
+		} catch (Exception $e) {
+			global $logger;
+			$logger->log("Error conducting pre-submission checks for an ILL request to the Resource Sharing Requests API: $e", Logger::LOG_ERROR);
+			return [
+				'title' => translate([
+					'text' => 'Request Failed',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => "Could not send request to the Resource Sharing For Groups system.",
+					'isPublicFacing' => true,
+				]),
+				'success' => false,
+			];
+		}
+		
+		$result = $this->updateRequestInOCLCResourceSharingForGroups($setting, $oclcRequestId, 'CANCEL');
+		if (!empty($result)) {
+			global $logger;
+			$logger->log("Error updating ILL request with the Resource Sharing Requests API", Logger::LOG_ERROR);
+			return [
+				'title' => translate([
+					'text' => 'Request Failed',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => "Could not send request to the Resource Sharing For Groups system.",
+					'isPublicFacing' => true,
+				]),
+				'success' => false,
+			];
+		}
 		return [
 			'success' => 'true',
 			'message' => translate([
@@ -57,6 +92,25 @@ class OCLCResourceSharingForGroupsDriver {
 	}
 
 	public function getRequests(User $patron, $setting): array {
+		try {
+			if (empty($this->accessToken)) {
+				$this->setAccessToken($setting);
+			}
+		} catch (Exception $e) {
+			global $logger;
+			$logger->log("Error conducting pre-submission checks for an ILL request to the Resource Sharing Requests API: $e", Logger::LOG_ERROR);
+			return [
+				'title' => translate([
+					'text' => 'Request Failed',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => "Could not send request to the Resource Sharing For Groups system.",
+					'isPublicFacing' => true,
+				]),
+				'success' => false,
+			];
+		}
 		$requestsSent = $this->getAllRequestsFromAspenDbForPatron($patron->id);
 		$openRequests = [];
 		$processedRequests = [];
@@ -84,7 +138,6 @@ class OCLCResourceSharingForGroupsDriver {
 			'available' => $processedRequests
 		];
 	}
-
 	public function submitRequest(OCLCResourceSharingForGroupsSetting $setting, User $patron, $requestFormData): array {
 
 		try {
@@ -95,6 +148,7 @@ class OCLCResourceSharingForGroupsDriver {
 		} catch (Exception $e) {
 			global $logger;
 			$logger->log("Error conducting pre-submission checks for an ILL request to the Resource Sharing Requests API: $e", Logger::LOG_DEBUG);
+
 			return [
 				'title' => translate([
 					'text' => 'Request Failed',
@@ -113,6 +167,7 @@ class OCLCResourceSharingForGroupsDriver {
 
 		// TODO: first, update the requests statuses in Aspen DB by fetching from RS API
 		// TODO: filter out requests by status so only active requests are considered for this duplicate check
+
 		$existingRequests = $this->getAllRequestsFromAspenDbForPatron($patron->id);
 		foreach ($existingRequests as $existingRequest) {
 			if ($newRequest->catalogKey == $existingRequest->catalogKey) {
@@ -185,28 +240,7 @@ class OCLCResourceSharingForGroupsDriver {
 
 	// Services - interacts with the Resource Sharing Request API from OCLC
 
-	private function getAllRequestsFromOCLCResourceSharingForGroupsForPatron(OCLCResourceSharingForGroupsSetting $setting, Int $patronId): array {
-		try {
-			if (empty($this->accessToken) || time() > $this->accessToken->expires) {
-				// FIXME: check the WSKey expiry date against today's date before attempting to fetch a token
-				$this->setAccessToken($setting);
-			}
-		} catch (Exception $e) {
-			global $logger;
-			$logger->log("Error conducting pre-submission checks for an ILL request to the Resource Sharing Requests API: $e", Logger::LOG_ERROR);
-			return [
-				'title' => translate([
-					'text' => 'Request Failed',
-					'isPublicFacing' => true,
-				]),
-				'message' => translate([
-					'text' => "Could not send request to the Resource Sharing For Groups system.",
-					'isPublicFacing' => true,
-				]),
-				'success' => false,
-			];
-		}
-	
+	private function getAllRequestsFromOCLCResourceSharingForGroupsForPatron(OCLCResourceSharingForGroupsSetting $setting, Int $patronId): array {	
 		require_once ROOT_DIR . '/sys/CurlWrapper.php';
 		$searchTerm = "searchTerm=patronID";
 		$searchValue = "searchValue=" . "$patronId";
@@ -222,42 +256,20 @@ class OCLCResourceSharingForGroupsDriver {
 	}
 
 	private function getRequestFromOCLCResourceSharingForGroupsWithId(OCLCResourceSharingForGroupsSetting $setting, Int $oclcRequestId): array {
-		try {
-			if (empty($this->accessToken)) {
-				// FIXME: check the WSKey expiry date against today's date before attempting to fetch a token
-				$this->setAccessToken($setting);
-			}
-		} catch (Exception $e) {
-			global $logger;
-			$logger->log("Error conducting pre-submission checks for an ILL request to the Resource Sharing Requests API: $e", Logger::LOG_ERROR);
-			return [
-				'title' => translate([
-					'text' => 'Request Failed',
-					'isPublicFacing' => true,
-				]),
-				'message' => translate([
-					'text' => "Could not send request to the Resource Sharing For Groups system.",
-					'isPublicFacing' => true,
-				]),
-				'success' => false,
-			];
-		}
-
 		require_once ROOT_DIR . '/sys/CurlWrapper.php';
 		$url = $setting->serviceBaseUrl . "/requests" . "/" . $oclcRequestId;
 		$curl = new CurlWrapper();
 		$customHeaders = [
 			"Authorization" => "Authorization: Bearer " . $this->accessToken->getToken(),
 		];
-		try {
-			$curl->addCustomHeaders($customHeaders, false);
-			$curl->curl_connect($url);
-			$response = $curl->curlGetPage($url);
-			return json_decode(json_encode(simplexml_load_string($response)), true)['responses'];
-		} catch (Exception $e) {}
+		$curl->addCustomHeaders($customHeaders, false);
+		$curl->curl_connect($url);
+		$response = $curl->curlGetPage($url);
+		return json_decode(json_encode(simplexml_load_string($response)), true)['responses'];
 	}
 
 	private function postToOCLCResourceSharingForGroups(string $serviceBaseUrl, OCLCResourceSharingForGroupsRequest $newRequest): array {
+
 		require_once ROOT_DIR . '/sys/CurlWrapper.php';
 		$url = $serviceBaseUrl . "/requests";
 		$curl = new CurlWrapper();
@@ -286,31 +298,11 @@ class OCLCResourceSharingForGroupsDriver {
 		try {
 			$this->accessToken = $provider->getAccessToken('client_credentials', ['scope' => $setting->scopes . " context:" . $this->registryId]);
 		} catch (IdentityProviderException $e) {
-			exit($e->getMessage());
+			throw  new Error($e->getMessage());
 		};
 	}
 
-	private function updateRequestInOCLCResourceSharingForGroups(OCLCResourceSharingForGroupsSetting $setting, int $oclcRequestId, $requestAction): array {
-		try {
-			if (empty($this->accessToken)) {
-				$this->setAccessToken($setting);
-			}
-		} catch (Exception $e) {
-			global $logger;
-			$logger->log("Error conducting pre-submission checks for an ILL request to the Resource Sharing Requests API: $e", Logger::LOG_ERROR);
-			return [
-				'title' => translate([
-					'text' => 'Request Failed',
-					'isPublicFacing' => true,
-				]),
-				'message' => translate([
-					'text' => "Could not send request to the Resource Sharing For Groups system.",
-					'isPublicFacing' => true,
-				]),
-				'success' => false,
-			];
-		}
-
+	private function updateRequestInOCLCResourceSharingForGroups(OCLCResourceSharingForGroupsSetting $setting, int $oclcRequestId, $requestAction): array | null {
 		require_once ROOT_DIR . '/sys/CurlWrapper.php';
 		$url = $setting->serviceBaseUrl . "/requests" . "/" . $oclcRequestId . "/" . $requestAction;
 		$curl = new CurlWrapper();
@@ -325,7 +317,7 @@ class OCLCResourceSharingForGroupsDriver {
 
 	// Helpers
 
-	private function createTemporaryHold($patronId, $request) {
+	private function createTemporaryHold($patronId, $request): Hold {
 		$curRequest = new Hold();
 		$curRequest->userId = $patronId;
 		$curRequest->type = 'interlibrary_loan';
