@@ -87,14 +87,12 @@ class OCLCResourceSharingForGroupsDriver {
 
 	public function submitRequest(OCLCResourceSharingForGroupsSetting $setting, User $patron, $requestFormData): array {
 
-		// step 1: GET AUTHENTICATION TOKEN FOR INSTITUTION
 		try {
 			if (empty($this->accessToken) || time() > $this->accessToken->expires) {
 				// FIXME: check the WSKey expiry date against today's date before attempting to fetch a token
 				$this->setAccessToken($setting);
 			}
 		} catch (Exception $e) {
-			// TODO: check which file it logs to + that it does it
 			global $logger;
 			$logger->log("Error conducting pre-submission checks for an ILL request to the Resource Sharing Requests API: $e", Logger::LOG_DEBUG);
 			return [
@@ -110,13 +108,11 @@ class OCLCResourceSharingForGroupsDriver {
 			];
 		}
 
-		// step 2: INITIALISE AND POPULATE A REQUEST OBJECT
 		$newRequest = new OCLCResourceSharingForGroupsRequest();
 		$this->populateNewRequest($newRequest, $requestFormData, $patron);
 
-		// step 3: CHECK FOR DUPLICATES AGAINST ASPEN DB
 		// TODO: first, update the requests statuses in Aspen DB by fetching from RS API
-		// Only active requests should be considered for this duplicate check
+		// TODO: filter out requests by status so only active requests are considered for this duplicate check
 		$existingRequests = $this->getAllRequestsFromAspenDbForPatron($patron->id);
 		foreach ($existingRequests as $existingRequest) {
 			if ($newRequest->catalogKey == $existingRequest->catalogKey) {
@@ -134,13 +130,11 @@ class OCLCResourceSharingForGroupsDriver {
 			}
 		}
 
-		// step 4: ADD THE REQUEST RETURNED BY RS API TO ASPEN DB
 		if (!empty($newRequest->insert())) {
 			global $logger;
 			$logger->log("Could not insert new request " . $newRequest->getLastError(), Logger::LOG_ERROR);
 		}
 
-		// step 5: SEND THE REQUEST TO THE API
 		try {
 			$response = $this->postToOCLCResourceSharingForGroups($setting->serviceBaseUrl, $newRequest);
 			$IllRequestCreated = json_decode(json_encode(simplexml_load_string($response)));
@@ -199,7 +193,6 @@ class OCLCResourceSharingForGroupsDriver {
 				$this->setAccessToken($setting);
 			}
 		} catch (Exception $e) {
-			// TODO: check which file it logs to + that it does it
 			global $logger;
 			$logger->log("Error conducting pre-submission checks for an ILL request to the Resource Sharing Requests API: $e", Logger::LOG_ERROR);
 			return [
@@ -226,7 +219,6 @@ class OCLCResourceSharingForGroupsDriver {
 		$curl->addCustomHeaders($customHeaders, false);
 		$curl->curl_connect($url);
 		$response = $curl->curlGetPage($url);
-		// FIXME: refactor how the "xml" response is parsed
 		return json_decode(json_encode(simplexml_load_string($response)))->responses;
 	}
 
