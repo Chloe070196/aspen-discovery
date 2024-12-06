@@ -136,10 +136,9 @@ class OCLCResourceSharingForGroupsDriver {
 		}
 
 		try {
-			$response = $this->postToOCLCResourceSharingForGroups($setting->serviceBaseUrl, $newRequest);
-			$IllRequestCreated = json_decode(json_encode(simplexml_load_string($response)));
-			$newRequest->requestStatus = $IllRequestCreated->responses->illRequest->requestStatus;
-			$newRequest->oclcRequestId = $IllRequestCreated->responses->illRequest->requestId;
+			$IllRequestCreated = $this->postToOCLCResourceSharingForGroups($setting->serviceBaseUrl, $newRequest);
+			$newRequest->requestStatus = $IllRequestCreated['responses']['illRequest']['requestStatus'];
+			$newRequest->oclcRequestId = $IllRequestCreated['responses']['illRequest']['requestId'];
 			$newRequest->update();
 		} catch (Exception $e) {
 			global $logger;
@@ -186,7 +185,7 @@ class OCLCResourceSharingForGroupsDriver {
 
 	// Services - interacts with the Resource Sharing Request API from OCLC
 
-	private function getAllRequestsFromOCLCResourceSharingForGroupsForPatron(OCLCResourceSharingForGroupsSetting $setting, Int $patronId) {
+	private function getAllRequestsFromOCLCResourceSharingForGroupsForPatron(OCLCResourceSharingForGroupsSetting $setting, Int $patronId): array {
 		try {
 			if (empty($this->accessToken) || time() > $this->accessToken->expires) {
 				// FIXME: check the WSKey expiry date against today's date before attempting to fetch a token
@@ -219,10 +218,10 @@ class OCLCResourceSharingForGroupsDriver {
 		$curl->addCustomHeaders($customHeaders, false);
 		$curl->curl_connect($url);
 		$response = $curl->curlGetPage($url);
-		return json_decode(json_encode(simplexml_load_string($response)))->responses;
+		return json_decode(json_encode(simplexml_load_string($response)), true)['responses'];
 	}
 
-	private function getRequestFromOCLCResourceSharingForGroupsWithId(OCLCResourceSharingForGroupsSetting $setting, Int $oclcRequestId) {
+	private function getRequestFromOCLCResourceSharingForGroupsWithId(OCLCResourceSharingForGroupsSetting $setting, Int $oclcRequestId): array {
 		try {
 			if (empty($this->accessToken)) {
 				// FIXME: check the WSKey expiry date against today's date before attempting to fetch a token
@@ -254,11 +253,11 @@ class OCLCResourceSharingForGroupsDriver {
 			$curl->addCustomHeaders($customHeaders, false);
 			$curl->curl_connect($url);
 			$response = $curl->curlGetPage($url);
-			return json_decode(json_encode(simplexml_load_string($response)))->responses;
+			return json_decode(json_encode(simplexml_load_string($response)), true)['responses'];
 		} catch (Exception $e) {}
 	}
 
-	private function postToOCLCResourceSharingForGroups(string $serviceBaseUrl, OCLCResourceSharingForGroupsRequest $newRequest): string {
+	private function postToOCLCResourceSharingForGroups(string $serviceBaseUrl, OCLCResourceSharingForGroupsRequest $newRequest): array {
 		require_once ROOT_DIR . '/sys/CurlWrapper.php';
 		$url = $serviceBaseUrl . "/requests";
 		$curl = new CurlWrapper();
@@ -269,7 +268,7 @@ class OCLCResourceSharingForGroupsDriver {
 		$curl->addCustomHeaders($customHeaders, false);
 		$curl->curl_connect($url);
 		$response = $curl->curlPostBodyData($url, $this->formatRequestBody($newRequest));
-		return $response;
+		return json_decode(json_encode(simplexml_load_string($response)), true);
 	}
 
 	private function setAccessToken(OCLCResourceSharingForGroupsSetting $setting): void {
@@ -291,7 +290,7 @@ class OCLCResourceSharingForGroupsDriver {
 		};
 	}
 
-	private function updateRequestInOCLCResourceSharingForGroups(OCLCResourceSharingForGroupsSetting $setting, int $oclcRequestId, $requestAction): object {
+	private function updateRequestInOCLCResourceSharingForGroups(OCLCResourceSharingForGroupsSetting $setting, int $oclcRequestId, $requestAction): array {
 		try {
 			if (empty($this->accessToken)) {
 				$this->setAccessToken($setting);
@@ -321,7 +320,7 @@ class OCLCResourceSharingForGroupsDriver {
 		$curl->addCustomHeaders($customHeaders, false);
 		$curl->curl_connect($url);
 		$response = $curl->curlGetPage($url);
-		return json_decode(json_encode(simplexml_load_string($response)))->responses;
+		return json_decode(json_encode(simplexml_load_string($response)), true)['responses'];
 	}
 
 	// Helpers
