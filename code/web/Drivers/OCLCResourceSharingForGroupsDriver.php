@@ -32,26 +32,7 @@ class OCLCResourceSharingForGroupsDriver {
 
 		// step 2: INITIALISE AND POPULATE A REQUEST OBJECT
 		$newRequest = new OCLCResourceSharingForGroupsRequest();
-		$newRequest->datePlaced = $requestFormData["datePlaced"];
-		$newRequest->title = strip_tags($requestFormData["title"]);
-		$newRequest->author = strip_tags($requestFormData["author"]);
-		$newRequest->publisher = strip_tags($requestFormData["publisher"]);
-		$newRequest->isbn = strip_tags($requestFormData["isbn"]);
-		$newRequest->issn = strip_tags($requestFormData["issn"]);
-		$newRequest->oclcNumber = strip_tags($requestFormData["oclcNumber"]);
-		$newRequest->{$requestFormData["uniqueIdentifierKey"]} = $requestFormData["uniqueIdentifierValue"];
-		$newRequest->feeAccepted =  (isset($requestFormData['acceptFee']) && $requestFormData['acceptFee'] == 'true') ? 1 : 0;
-		$newRequest->maximumFeeAmount = strip_tags($requestFormData["maximumFeeAmount"]);
-		$newRequest->catalogKey = strip_tags($requestFormData["catalogKey"]);
-		$newRequest->status = "NEW";
-		$newRequest->note = strip_tags($requestFormData["note"]);
-		$newRequest->oclcRequesterRegistryId = $this->registryId;
-
-		// further populate newRequest using patron-related data
-		$newRequest->userId = $patron->id;
-		$patronHomeLocation = $patron->getHomeLocation();
-		$pickupLocation = empty($patronHomeLocation->oclcResourceSharingForGroupsLocation) ? $patronHomeLocation->code : $patronHomeLocation->oclcResourceSharingForGroupsLocation;
-		$newRequest->pickupLocation = $pickupLocation;
+		$this->populateNewRequest($newRequest, $requestFormData, $patron);
 
 		// step 3: CHECK FOR DUPLICATES AGAINST ASPEN DB
 		// TODO: first, update the requests statuses in Aspen DB by fetching from RS API
@@ -351,5 +332,26 @@ class OCLCResourceSharingForGroupsDriver {
 			"userId" => "{$newRequest->userId}"
 		];
 		return (object)["illRequest" => $illRequest];
+	}
+
+	private function populateNewRequest(OCLCResourceSharingForGroupsRequest $newRequest, &$requestFormData, User $patron): void {
+		$newRequest->datePlaced = $requestFormData["datePlaced"];
+		$newRequest->title = strip_tags($requestFormData["title"]);
+		$newRequest->author = strip_tags($requestFormData["author"]);
+		$newRequest->publisher = strip_tags($requestFormData["publisher"]);
+		$newRequest->isbn = strip_tags($requestFormData["isbn"]);
+		$newRequest->issn = strip_tags($requestFormData["issn"]);
+		$newRequest->oclcNumber = strip_tags($requestFormData["oclcNumber"]);
+		$newRequest->{$requestFormData["uniqueIdentifierKey"]} = $requestFormData["uniqueIdentifierValue"];
+		$newRequest->feeAccepted =  (isset($requestFormData['acceptFee']) && $requestFormData['acceptFee'] == 'true') ? 1 : 0;
+		$newRequest->maximumFeeAmount = strip_tags($requestFormData["maximumFeeAmount"]);
+		$newRequest->catalogKey = strip_tags($requestFormData["catalogKey"]);
+		$newRequest->status = "NEW";
+		$newRequest->note = strip_tags($requestFormData["note"]);
+		$newRequest->oclcRequesterRegistryId = $this->registryId;
+		$newRequest->userId = $patron->id;
+		$patronHomeLocation = $patron->getHomeLocation();
+		$pickupLocation = empty($patronHomeLocation->oclcResourceSharingForGroupsLocation) ? $patronHomeLocation->code : $patronHomeLocation->oclcResourceSharingForGroupsLocation;
+		$newRequest->pickupLocation = $pickupLocation;
 	}
 }
