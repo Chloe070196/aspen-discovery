@@ -9,10 +9,11 @@ use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 
 class OCLCResourceSharingForGroupsDriver {
 	private $accessToken;
-	private $registryId;
+	private $_registryId;
 
 	public function __construct() {
-		$this->registryId = Location::getUserHomeLocation()->oclcRegistryId;
+		$homeLocation = Location::getUserHomeLocation();
+		$this->_registryId = $homeLocation ? $homeLocation->registryId : "" ;
 	}
 
 	// Controllers
@@ -39,6 +40,8 @@ class OCLCResourceSharingForGroupsDriver {
 		}
 		
 		$result = $this->updateRequestInOCLCResourceSharingForGroups($setting, $oclcRequestId, 'CANCEL');
+		
+		// TODO: update req status in the database (Phase Two)
 		if (!empty($result)) {
 			global $logger;
 			$logger->log("Error updating ILL request with the Resource Sharing Requests API", Logger::LOG_ERROR);
@@ -223,6 +226,24 @@ class OCLCResourceSharingForGroupsDriver {
 		];
 	}
 
+	public function updateRequestsInAspenDbForPatron(OCLCResourceSharingForGroupsSetting $setting, int $patronId): void {
+		$requests = $this->getAllRequestsFromOCLCResourceSharingForGroupsForPatron($setting, $patronId);
+		foreach ($requests as $requestInAspenDB) {
+			if (!empty($requestInOclcRS4G)) {
+				$requestInAspenDB->requestStatus = $requestInOclcRS4G['illRequest']['requestStatus'];
+				$requestInAspenDB->update();
+			}
+		}
+	}
+
+	public function setRegistryId(int $id) {
+		$this->_registryId = $id;
+	}
+	public function getRegistryId(): int {
+		return $this->_registryId;
+	}
+
+
 	// Services - interacts with Aspen DB
 
 	private function getAllRequestsFromAspenDbForPatron(Int $patronId): array {
@@ -236,6 +257,15 @@ class OCLCResourceSharingForGroupsDriver {
 			}
 		}
 		return $requestsToProcess;
+	}
+
+	public function getPatronsWithActiveOCLCIllRequests (): array {
+		$patronsWithActiveIllRequests = [];
+		$patron = new User();
+		$patron->joinAdd(new OCLCResourceSharingForGroupsRequest(), 'LEFT', 'userRequest', 'userId' , 'id');
+		$patron->whereAdd("requestStatus <> RETURNED");
+		$patronsWithActiveIllRequests = $patron->fetchAll();
+		return $patronsWithActiveIllRequests;
 	}
 
 	// Services - interacts with the Resource Sharing Request API from OCLC
@@ -296,7 +326,7 @@ class OCLCResourceSharingForGroupsDriver {
 		];
 		$provider = new GenericProvider($setup_options, ['optionProvider' => $basicAuth_provider]);
 		try {
-			$this->accessToken = $provider->getAccessToken('client_credentials', ['scope' => $setting->scopes . " context:" . $this->registryId]);
+			$this->accessToken = $provider->getAccessToken('client_credentials', ['scope' => $setting->scopes . " context:" . $this->_registryId]);
 		} catch (IdentityProviderException $e) {
 			throw  new Error($e->getMessage());
 		};
@@ -378,7 +408,7 @@ class OCLCResourceSharingForGroupsDriver {
 		$newRequest->catalogKey = strip_tags($requestFormData["catalogKey"]);
 		$newRequest->status = "NEW";
 		$newRequest->note = strip_tags($requestFormData["note"]);
-		$newRequest->oclcRequesterRegistryId = $this->registryId;
+		$newRequest->oclcRequesterRegistryId = $this->_registryId;
 		$newRequest->userId = $patron->id;
 		$patronHomeLocation = $patron->getHomeLocation();
 		$pickupLocation = empty($patronHomeLocation->oclcResourceSharingForGroupsLocation) ? $patronHomeLocation->code : $patronHomeLocation->oclcResourceSharingForGroupsLocation;
