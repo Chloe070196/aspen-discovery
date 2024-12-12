@@ -18,6 +18,87 @@ class OCLCResourceSharingForGroupsDriver {
 
 	// Controllers
 
+	public function getAccountSummary(User $user): AccountSummary {
+		[
+			$existingId,
+			$summary,
+		] = $user->getCachedAccountSummary('oclcResourceSharingForGroups');
+
+		if ($summary === null || isset($_REQUEST['reload'])) {
+			//Get account information from api
+			require_once ROOT_DIR . '/sys/User/AccountSummary.php';
+			$summary = new AccountSummary();
+			$summary->userId = $user->id;
+			$summary->source = 'oclcResourceSharingForGroups';
+			$summary->resetCounters();
+
+			$settings = new OCLCResourceSharingForGroupsSetting();
+			$homeLibrary = Library::getPatronHomeLibrary();
+			$settings->whereAdd("id={$homeLibrary->oclcResourceSharingForGroupsSettingsId}");
+			if($settings->find()) {
+				$settings->fetch();
+			}
+			$requests = $this->getRequests($user, $settings);
+			$summary->numUnavailableHolds = count($requests['unavailable']);
+			$summary->numAvailableHolds = count($requests['available']);
+		}
+
+		return $summary;
+	}
+
+	public function getRequests(User $patron, $setting): array {
+		if (empty($this->_registryId)) {
+			return [];
+		}
+		try {
+			if (empty($this->accessToken)) {
+				$this->setAccessToken($setting);
+			}
+		} catch (Exception $e) {
+			global $logger;
+			$logger->log("Exception conducting pre-submission checks for an ILL request to the Resource Sharing Requests API: $e", Logger::LOG_ERROR);
+			return [
+				'title' => translate([
+					'text' => 'Request Failed',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => "Could not send request to the Resource Sharing For Groups system.",
+					'isPublicFacing' => true,
+				]),
+				'success' => false,
+			];
+		}
+		$requestsSent = $this->getAllRequestsFromAspenDbForPatron($patron->id);
+		$openRequests = [];
+		$processedRequests = [];
+		foreach ($requestsSent as $requestInAspenDB) {
+			if ($requestInAspenDB->oclcRequestId) {
+				$requestInOclcRS4G = $this->getRequestFromOCLCResourceSharingForGroupsWithId($setting, $requestInAspenDB->oclcRequestId);
+			}
+			if (!empty($requestInOclcRS4G)) {
+				$requestInAspenDB->requestStatus = $requestInOclcRS4G['illRequest']['requestStatus'];
+				$requestInAspenDB->update();
+				if(
+					$requestInAspenDB->requestStatus == "REVIEW" ||
+					$requestInAspenDB->requestStatus == "REVIEWING"
+				){
+					$openRequests[] = $this->createTemporaryHold($patron->id, $requestInAspenDB);
+				}
+				if(
+					$requestInAspenDB->requestStatus == "RECEIVED" ||
+					$requestInAspenDB->requestStatus == "CLOSED"
+				){
+					$processedRequests[] = $this->createTemporaryHold($patron->id, $requestInAspenDB);
+				}
+			}
+		}
+		return [
+			'unavailable' => $openRequests,
+			'available' => $processedRequests
+		];
+	}
+
 	public function submitRequest(OCLCResourceSharingForGroupsSetting $setting, User $patron, $requestFormData): array {
 		if (empty($this->_registryId)) {
 			global $logger;
@@ -160,6 +241,18 @@ class OCLCResourceSharingForGroupsDriver {
 		return json_decode(json_encode(simplexml_load_string($response)), true)['responses'];
 	}
 
+	private function getRequestFromOCLCResourceSharingForGroupsWithId(OCLCResourceSharingForGroupsSetting $setting, Int $oclcRequestId): array {
+		require_once ROOT_DIR . '/sys/CurlWrapper.php';
+		$url = $setting->serviceBaseUrl . "/requests" . "/" . $oclcRequestId;
+		$curl = new CurlWrapper();
+		$customHeaders = [
+			"Authorization" => "Authorization: Bearer " . $this->accessToken->getToken(),
+		];
+		$curl->addCustomHeaders($customHeaders, false);
+		$curl->curl_connect($url);
+		$response = $curl->curlGetPage($url);
+		return json_decode(json_encode(simplexml_load_string($response)), true)['responses'];
+	}
 
 	private function postToOCLCResourceSharingForGroups(string $serviceBaseUrl, OCLCResourceSharingForGroupsRequest $newRequest): array {
 		require_once ROOT_DIR . '/sys/CurlWrapper.php';
@@ -203,6 +296,26 @@ class OCLCResourceSharingForGroupsDriver {
 	}
 
 	// Helpers
+
+	private function createTemporaryHold($patronId, $request): Hold {
+		$curRequest = new Hold();
+		$curRequest->userId = $patronId;
+		$curRequest->type = 'interlibrary_loan';
+		$curRequest->isIll = true;
+		$curRequest->source = 'oclcResourceSharingForGroups';
+		$curRequest->sourceId = $request->catalogKey;
+		$curRequest->recordId = $request->catalogKey;
+		$curRequest->title = $request->title;
+		$curRequest->author = $request->author;
+		$curRequest->status = $request->requestStatus;
+		$curRequest->pickupLocationName = $request->pickupLocation;
+		$curRequest->cancelId = $request->oclcRequestId;
+		$curRequest->cancelable = false;
+		if ($request->requestStatus == 'REVIEW' || $request->requestStatus == 'REVIEWING') {
+			$curRequest->cancelable = true;
+		}
+		return $curRequest;
+	}
 
 	private function formatRequestBody(OCLCResourceSharingForGroupsRequest $newRequest): object {
 		$illRequest = [];
