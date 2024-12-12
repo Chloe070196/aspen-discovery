@@ -833,6 +833,63 @@ class MyAccount_AJAX extends JSON_Action {
 		return $result;
 	}
 
+	function cancelOCLCResourceSharingForGroupsRequest(): array {
+		$result = [
+			'success' => false,
+			'message' => translate([
+				'text' => 'Error cancelling request.',
+				'isPublicFacing' => true,
+			]),
+		];
+
+		require_once ROOT_DIR . '/sys/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsSetting.php';
+		$settings = new OCLCResourceSharingForGroupsSetting();
+		if ($settings->find(true)) {
+			if (!UserAccount::isLoggedIn()) {
+				$result['message'] = translate([
+					'text' => 'You must be logged in to cancel a request.  Please close this dialog and login again.',
+					'isPublicFacing' => true,
+				]);;
+			} else {
+				// Ensure the user cancelling the request is the owning user
+				$patronId = $_REQUEST['patronId'];
+				$user = UserAccount::getLoggedInUser();
+				$patronOwningHold = $user->getUserReferredTo($patronId);
+				if ($patronOwningHold == false) {
+					$result['message'] = translate([
+						'text' => 'Sorry, you do not have access to cancel requests for the supplied user.',
+						'isPublicFacing' => true,
+					]);;
+				} else {
+					if (empty($_REQUEST['cancelId'])) {
+						$result['message'] = translate([
+							'text' => 'Information about the requests to be cancelled was not provided.',
+							'isPublicFacing' => true,
+						]);
+					} else {
+						$cancelId = $_REQUEST['cancelId'];
+						$driver = new OCLCResourceSharingForGroupsDriver();
+						$result = $driver->cancelRequest($settings, $cancelId);
+					}
+				}
+			}
+		} else {
+		$result = [
+			'title' => translate([
+				'text' => 'Error cancelling request.',
+				'isPublicFacing' => true,
+			]),
+			'message' => translate([
+				'text' => "OCLC Resource Sharing For Groups Settings do not exist, please contact the library.",
+				'isPublicFacing' => true,
+			]),
+			'success' => false,
+		];
+	}
+
+		return $result;
+	}
+
 	/** @noinspection PhpUnused */
 	function confirmCancelHoldAll(): array {
 		$cancelButtonLabel = translate([

@@ -18,6 +18,59 @@ class OCLCResourceSharingForGroupsDriver {
 
 	// Controllers
 
+	public function cancelRequest(OCLCResourceSharingForGroupsSetting $setting, int $oclcRequestId): array {
+		if (empty($this->_registryId)) {
+			global $logger;
+			$logger->log("Could not Authenticate: home location has not been assigned an OCLC Registry Id", Logger::LOG_ERROR);
+			throw  new Exception("This library branch is not configured to send ILL requests. Please contact your library.");
+		}
+		try {
+			if (empty($this->accessToken)) {
+				$this->setAccessToken($setting);
+			}
+		} catch (Exception $e) {
+			global $logger;
+			$logger->log("Exception conducting pre-submission checks for an ILL request to the Resource Sharing Requests API: $e", Logger::LOG_ERROR);
+			return [
+				'title' => translate([
+					'text' => 'Request Failed',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => "Could not send request to the Resource Sharing For Groups system.",
+					'isPublicFacing' => true,
+				]),
+				'success' => false,
+			];
+		}
+		
+		$result = $this->updateRequestInOCLCResourceSharingForGroups($setting, $oclcRequestId, 'CANCEL');
+		$this->updateRequestStatusInAspenDb($oclcRequestId, 'CANCELLED');
+		
+		if (!empty($result)) {
+			global $logger;
+			$logger->log("Exception updating ILL request with the Resource Sharing Requests API", Logger::LOG_ERROR);
+			return [
+				'title' => translate([
+					'text' => 'Request Failed',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => "Could not send request to the Resource Sharing For Groups system.",
+					'isPublicFacing' => true,
+				]),
+				'success' => false,
+			];
+		}
+		return [
+			'success' => 'true',
+			'message' => translate([
+				'text' => 'Your request was cancelled successfully',
+				'isPublicFacing' => true,
+			]),
+		];
+	}
+
 	public function getAccountSummary(User $user): AccountSummary {
 		[
 			$existingId,
@@ -321,6 +374,19 @@ class OCLCResourceSharingForGroupsDriver {
 		} catch (IdentityProviderException $e) {
 			throw  new Exception($e->getMessage());
 		};
+	}
+
+	private function updateRequestInOCLCResourceSharingForGroups(OCLCResourceSharingForGroupsSetting $setting, int $oclcRequestId, $requestAction): array | null {
+		require_once ROOT_DIR . '/sys/CurlWrapper.php';
+		$url = $setting->serviceBaseUrl . "/requests" . "/" . $oclcRequestId . "/" . $requestAction;
+		$curl = new CurlWrapper();
+		$customHeaders = [
+			"Authorization" => "Authorization: Bearer " . $this->accessToken->getToken(),
+		];
+		$curl->addCustomHeaders($customHeaders, false);
+		$curl->curl_connect($url);
+		$response = $curl->curlGetPage($url);
+		return json_decode(json_encode(simplexml_load_string($response)), true)['responses'];
 	}
 
 	// Helpers
