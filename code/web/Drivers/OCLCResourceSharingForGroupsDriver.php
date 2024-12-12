@@ -209,6 +209,15 @@ class OCLCResourceSharingForGroupsDriver {
 		}
 	}
 
+	public function setRegistryId(int $id) {
+		$this->_registryId = $id;
+	}
+
+	public function getRegistryId(): int {
+		return $this->_registryId;
+	}
+
+
 	// Services - interacts with Aspen DB
 
 	private function getAllRequestsFromAspenDbForPatron(Int $patronId): array {
@@ -222,6 +231,25 @@ class OCLCResourceSharingForGroupsDriver {
 			}
 		}
 		return $requestsToProcess;
+	}
+
+	public function getPatronsWithActiveOCLCIllRequests(): array {
+		if (empty($this->_registryId)) {
+			return [];
+		}
+		$patronsWithActiveIllRequests = [];
+		$patron = new User();
+		$patron->joinAdd(new OCLCResourceSharingForGroupsRequest(), 'LEFT', 'userRequest', 'userId' , 'id');
+		$patron->whereAdd("requestStatus <> RETURNED");
+		$patronsWithActiveIllRequests = $patron->fetchAll();
+		return $patronsWithActiveIllRequests;
+	}
+
+	private function updateRequestStatusInAspenDb(Int $oclcRequestId, $newStatus): void {
+		$request = new OCLCResourceSharingForGroupsRequest();
+		$request->oclcRequestId = $oclcRequestId;
+		$request->requestStatus = $newStatus;
+		$request->update();
 	}
 
 	// Services - interacts with the Resource Sharing Request API from OCLC
