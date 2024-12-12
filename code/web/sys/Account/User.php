@@ -890,6 +890,10 @@ class User extends DataObject {
 	}
 
 	function hasInterlibraryLoan(): bool {
+		return $this->hasVDXInterlibraryLoan() || $this->hasOCLCResourceSharingForGroupsInterlibraryLoan();
+	}
+
+	function hasVDXInterlibraryLoan(): bool {
 		try {
 			$homeLocation = Location::getDefaultLocationForUser();
 			if ($homeLocation != null) {
@@ -915,6 +919,22 @@ class User extends DataObject {
 			}
 		} catch (Exception $e) {
 			//This happens if the tables aren't setup, ignore
+		}
+		return false;
+	}
+	
+	function hasOCLCResourceSharingForGroupsInterlibraryLoan(): bool {
+		try {
+			require_once ROOT_DIR . '/sys/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsSetting.php';
+			require_once ROOT_DIR . '/sys/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsForm.php';
+			$OCLCResourceSharingForGroupsSettings = new OCLCResourceSharingForGroupsSetting();
+			$homeLibrary = Library::getPatronHomeLibrary();
+			$OCLCResourceSharingForGroupsSettings->whereAdd("id={$homeLibrary->oclcResourceSharingForGroupsSettingsId}");
+			if ($OCLCResourceSharingForGroupsSettings->find(true)) {
+				return true;
+			}
+		} catch (Exception $e) {
+			//This happens if the tables are not installed yet
 		}
 		return false;
 	}
@@ -1873,13 +1893,37 @@ class User extends DataObject {
 			}
 
 			if ($source == 'all' || $source == 'interlibrary_loan') {
-				if ($this->hasInterlibraryLoan()) {
-					//For now, this is just VDX
+				if ($this->hasVDXInterlibraryLoan()) {
 					require_once ROOT_DIR . '/Drivers/VdxDriver.php';
 					$driver = new VdxDriver();
 					$vdxRequests = $driver->getRequests($this);
 					$allHolds = array_merge_recursive($allHolds, $vdxRequests);
 					$holdsToReturn = array_merge_recursive($holdsToReturn, $vdxRequests);
+				}
+				if ($this->hasOCLCResourceSharingForGroupsInterlibraryLoan()) {
+					require_once ROOT_DIR . '/Drivers/OCLCResourceSharingForGroupsDriver.php';
+					require_once ROOT_DIR . '/sys/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsSetting.php';
+					$OCLCResourceSharingForGroupsSettings = new OCLCResourceSharingForGroupsSetting();
+					$OCLCResourceSharingForGroupsSettings->whereAdd("id=" . Library::getActiveLibrary()->oclcResourceSharingForGroupsSettingsId);
+					if ($OCLCResourceSharingForGroupsSettings->find(true)) {
+						$driver = new OCLCResourceSharingForGroupsDriver();
+						$oclcResourceSharingForGroupsRequests = $driver->getRequests($this, $OCLCResourceSharingForGroupsSettings);
+						$allHolds = array_merge_recursive($allHolds, $oclcResourceSharingForGroupsRequests);
+						$holdsToReturn = array_merge_recursive($holdsToReturn, $oclcResourceSharingForGroupsRequests);
+					} else {
+						$results = [
+							'title' => translate([
+								'text' => 'Invalid Configuration',
+								'isPublicFacing' => true,
+							]),
+							'message' => translate([
+								'text' => "OCLC Resource Sharing For Groups Settings do not exist, please contact the library to make a request.",
+								'isPublicFacing' => true,
+							]),
+							'success' => false,
+						];
+					}
+
 				}
 			}
 			//Delete all existing holds
