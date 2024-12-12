@@ -8,13 +8,9 @@ class OCLCResourceSharingForGroupsForm extends DataObject{
 	public $showAuthor;
 	public $showEdition;
 	public $showPublisher;
-	public $showIsbn;
-	public $showIssn;
-	public $showOclcNumber;
 	public $showAcceptFee;
 	public $showMaximumFee;
 	public $feeInformationText;
-	public $showCatalogKey;
 
 	public static function getObjectStructure($context = ''): array {
 		return [
@@ -50,24 +46,6 @@ class OCLCResourceSharingForGroupsForm extends DataObject{
 				'label' => 'Show Publisher?',
 				'description' => 'Whether or not the user should be prompted to enter the publisher name',
 			],
-			'showIsbn' => [
-				'property' => 'showIsbn',
-				'type' => 'checkbox',
-				'label' => 'Show ISBN?',
-				'description' => 'Whether or not the user should be prompted to enter the ISBN',
-			],
-			'showIssn' => [
-				'property' => 'showIssn',
-				'type' => 'checkbox',
-				'label' => 'Show ISSN?',
-				'description' => 'Whether or not the user should be prompted to enter the ISSN',
-			],
-			'showOclcNumber' => [
-				'property' => 'showIssn',
-				'type' => 'checkbox',
-				'label' => 'Show ISSN?',
-				'description' => 'Whether or not the user should be prompted to enter the ISSN',
-			],
 			'showAcceptFee' => [
 				'property' => 'showAcceptFee',
 				'type' => 'checkbox',
@@ -86,12 +64,6 @@ class OCLCResourceSharingForGroupsForm extends DataObject{
 				'label' => 'Fee Information Text',
 				'description' => 'Text to be displayed to give additional information about the fees charged.',
 				'maxLength' => 5000,
-			],
-			'showCatalogKey' => [
-				'property' => 'showCatalogKey',
-				'type' => 'checkbox',
-				'label' => 'Show Catalog Key?',
-				'description' => 'Whether or not the user should be prompted for the catalog key',
 			],
 		];
 	}
@@ -147,7 +119,7 @@ class OCLCResourceSharingForGroupsForm extends DataObject{
 			if (!empty($marcRecordDriver->getCleanISBN())) {
 				$fields['isbn'] = [
 					'property' => 'isbn',
-					'type' => ($this->showIsbn ? 'text' : 'hidden'),
+					'type' => 'text',
 					'label' => 'ISBN',
 					'description' => 'The ISBN of the title to request',
 					'maxLength' => 20,
@@ -157,7 +129,7 @@ class OCLCResourceSharingForGroupsForm extends DataObject{
 			} else if (!empty($marcRecordDriver->getISSNs())) {
 				$fields['issn'] = [
 					'property' => 'issn',
-					'type' => ($this->showIssn ? 'text' : 'hidden'),
+					'type' => 'text',
 					'label' => 'ISBN',
 					'description' => 'The ISSN of the title to request',
 					'maxLength' => 20,
@@ -174,7 +146,7 @@ class OCLCResourceSharingForGroupsForm extends DataObject{
 				}
 				$fields['oclcNumber'] = [
 					'property' => 'oclcNumber',
-					'type' => ($this->oclcNumber ? 'text' : 'hidden'),
+					'type' => 'text',
 					'lable' => 'OCLC Number',
 					'description' => 'The OCLC Number of the title to request',
 					'maxLength' => 50,
@@ -192,8 +164,9 @@ class OCLCResourceSharingForGroupsForm extends DataObject{
 					'values' => [
 						'isbn' => 'ISBN',
 						'issn' => 'ISSN',
-						'oclcNumber' => 'OCLC Number'
+						'oclcNumber' => 'OCLC Number',
 					],
+					'default' => 'isbn',
 				];
 				$fields['uniqueIdentifierValue'] = [
 					'property' => 'uniqueIdentifierValue', 
@@ -217,6 +190,7 @@ class OCLCResourceSharingForGroupsForm extends DataObject{
 					'issn' => 'ISSN',
 					'oclcNumber' => 'OCLC Number'
 				],
+				'default' => 'isbn',
 			];
 			$fields['uniqueIdentifierValue'] = [
 				'property' => 'uniqueIdentifierValue', 
@@ -290,7 +264,7 @@ class OCLCResourceSharingForGroupsForm extends DataObject{
 		];
 		$fields['catalogKey'] = [
 			'property' => 'catalogKey',
-			'type' => (($this->showCatalogKey && $marcRecordDriver != null) ? 'text' : 'hidden'),
+			'type' => 'hidden',
 			'label' => 'Record Number',
 			'description' => 'The record number to be requested',
 			'maxLength' => 20,

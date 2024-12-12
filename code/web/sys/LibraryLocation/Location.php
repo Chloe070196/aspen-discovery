@@ -3081,6 +3081,16 @@ class Location extends DataObject {
 					return 'vdx';
 				}
 			}
+
+			//Local ILL and VDX are not available, check to see if OCLC Resource Sharing For Groups is available.
+			require_once ROOT_DIR . '/sys/VDX/VdxSetting.php';
+			require_once ROOT_DIR . '/sys/VDX/VdxForm.php';
+			$oclcResourceSharingForGroupsSettings = new OCLCResourceSharingForGroupsSetting();
+			if ($oclcResourceSharingForGroupsSettings->find(true)) {
+				if ($this->oclcResourceSharingForGroupsFormId != -1) {
+					return 'oclc_resource_sharing_for_groups';
+				}
+			}
 		} catch (Exception $e) {
 			//This happens if the tables aren't setup, ignore
 		}

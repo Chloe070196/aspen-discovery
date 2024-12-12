@@ -13,19 +13,24 @@ class OCLCResourceSharingForGroupsDriver {
 
 	public function __construct() {
 		$homeLocation = Location::getUserHomeLocation();
-		$this->_registryId = $homeLocation ? $homeLocation->registryId : "" ;
+		$this->_registryId = $homeLocation ? $homeLocation->oclcRegistryId : "" ;
 	}
 
 	// Controllers
 
 	public function cancelRequest(OCLCResourceSharingForGroupsSetting $setting, int $oclcRequestId): array {
+		if (empty($this->_registryId)) {
+			global $logger;
+			$logger->log("Could not Authenticate: home location has not been assigned an OCLC Registry Id", Logger::LOG_ERROR);
+			throw  new Exception("This library branch is not configured to send ILL requests. Please contact your library.");
+		}
 		try {
 			if (empty($this->accessToken)) {
 				$this->setAccessToken($setting);
 			}
 		} catch (Exception $e) {
 			global $logger;
-			$logger->log("Error conducting pre-submission checks for an ILL request to the Resource Sharing Requests API: $e", Logger::LOG_ERROR);
+			$logger->log("Exception conducting pre-submission checks for an ILL request to the Resource Sharing Requests API: $e", Logger::LOG_ERROR);
 			return [
 				'title' => translate([
 					'text' => 'Request Failed',
@@ -40,11 +45,11 @@ class OCLCResourceSharingForGroupsDriver {
 		}
 		
 		$result = $this->updateRequestInOCLCResourceSharingForGroups($setting, $oclcRequestId, 'CANCEL');
+		$this->updateRequestStatusInAspenDb($oclcRequestId, 'CANCELLED');
 		
-		// TODO: update req status in the database (Phase Two)
 		if (!empty($result)) {
 			global $logger;
-			$logger->log("Error updating ILL request with the Resource Sharing Requests API", Logger::LOG_ERROR);
+			$logger->log("Exception updating ILL request with the Resource Sharing Requests API", Logger::LOG_ERROR);
 			return [
 				'title' => translate([
 					'text' => 'Request Failed',
@@ -95,13 +100,16 @@ class OCLCResourceSharingForGroupsDriver {
 	}
 
 	public function getRequests(User $patron, $setting): array {
+		if (empty($this->_registryId)) {
+			return [];
+		}
 		try {
 			if (empty($this->accessToken)) {
 				$this->setAccessToken($setting);
 			}
 		} catch (Exception $e) {
 			global $logger;
-			$logger->log("Error conducting pre-submission checks for an ILL request to the Resource Sharing Requests API: $e", Logger::LOG_ERROR);
+			$logger->log("Exception conducting pre-submission checks for an ILL request to the Resource Sharing Requests API: $e", Logger::LOG_ERROR);
 			return [
 				'title' => translate([
 					'text' => 'Request Failed',
@@ -118,7 +126,9 @@ class OCLCResourceSharingForGroupsDriver {
 		$openRequests = [];
 		$processedRequests = [];
 		foreach ($requestsSent as $requestInAspenDB) {
-			$requestInOclcRS4G = $this->getRequestFromOCLCResourceSharingForGroupsWithId($setting, $requestInAspenDB->oclcRequestId);
+			if ($requestInAspenDB->oclcRequestId) {
+				$requestInOclcRS4G = $this->getRequestFromOCLCResourceSharingForGroupsWithId($setting, $requestInAspenDB->oclcRequestId);
+			} 
 			if (!empty($requestInOclcRS4G)) {
 				$requestInAspenDB->requestStatus = $requestInOclcRS4G['illRequest']['requestStatus'];
 				$requestInAspenDB->update();
@@ -141,17 +151,21 @@ class OCLCResourceSharingForGroupsDriver {
 			'available' => $processedRequests
 		];
 	}
+
 	public function submitRequest(OCLCResourceSharingForGroupsSetting $setting, User $patron, $requestFormData): array {
+		if (empty($this->_registryId)) {
+			global $logger;
+			$logger->log("Could not Authenticate: home location has not been assigned an OCLC Registry Id", Logger::LOG_ERROR);
+			throw  new Exception("This library branch is not configured to send ILL requests. Please contact your library.");
+		}
 
 		try {
 			if (empty($this->accessToken) || time() > $this->accessToken->expires) {
-				// FIXME: check the WSKey expiry date against today's date before attempting to fetch a token
 				$this->setAccessToken($setting);
 			}
 		} catch (Exception $e) {
 			global $logger;
-			$logger->log("Error conducting pre-submission checks for an ILL request to the Resource Sharing Requests API: $e", Logger::LOG_DEBUG);
-
+			$logger->log("Exception conducting pre-submission checks for an ILL request to the Resource Sharing Requests API: $e", Logger::LOG_DEBUG);
 			return [
 				'title' => translate([
 					'text' => 'Request Failed',
@@ -165,42 +179,30 @@ class OCLCResourceSharingForGroupsDriver {
 			];
 		}
 
-		$newRequest = new OCLCResourceSharingForGroupsRequest();
-		$this->populateNewRequest($newRequest, $requestFormData, $patron);
+		$newRequestInAspenDb = new OCLCResourceSharingForGroupsRequest();
+		$this->populateNewRequest($newRequestInAspenDb, $requestFormData, $patron);
 
-		// TODO: first, update the requests statuses in Aspen DB by fetching from RS API
-		// TODO: filter out requests by status so only active requests are considered for this duplicate check
-
-		$existingRequests = $this->getAllRequestsFromAspenDbForPatron($patron->id);
-		foreach ($existingRequests as $existingRequest) {
-			if ($newRequest->catalogKey == $existingRequest->catalogKey) {
-				return [
-					'title' => translate([
-						'text' => 'Request Failed',
-						'isPublicFacing' => true,
-					]),
-					'message' => translate([
-						'text' => "This title has already been requested for you.  You may only have one active request for a title.",
-						'isPublicFacing' => true,
-					]),
-					'success' => false,
-				];
-			}
+		if ($this->isDuplicate($setting, $patron->id, $newRequestInAspenDb)) {
+			return [
+				'title' => translate([
+					'text' => 'Request Failed',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => "This title has already been requested for you.  You may only have one active request for a title.",
+					'isPublicFacing' => true,
+				]),
+				'success' => false,
+			];
 		}
-
-		if (!empty($newRequest->insert())) {
-			global $logger;
-			$logger->log("Could not insert new request " . $newRequest->getLastError(), Logger::LOG_ERROR);
-		}
-
+		$newRequestInAspenDb->insert();
 		try {
-			$IllRequestCreated = $this->postToOCLCResourceSharingForGroups($setting->serviceBaseUrl, $newRequest);
-			$newRequest->requestStatus = $IllRequestCreated['responses']['illRequest']['requestStatus'];
-			$newRequest->oclcRequestId = $IllRequestCreated['responses']['illRequest']['requestId'];
-			$newRequest->update();
+			$IllRequestCreated = $this->postToOCLCResourceSharingForGroups($setting->serviceBaseUrl, $newRequestInAspenDb);
+			$newRequestInAspenDb->requestStatus = $IllRequestCreated['responses']['illRequest']['requestStatus'];
+			$newRequestInAspenDb->oclcRequestId = $IllRequestCreated['responses']['illRequest']['requestId'];
 		} catch (Exception $e) {
 			global $logger;
-			$logger->log("Error submitting an ILL request to the Resource Sharing Requests API: $e", Logger::LOG_ERROR);
+			$logger->log("Exception submitting an ILL request to the Resource Sharing Requests API: $e", Logger::LOG_ERROR);
 			return [
 				'title' => translate([
 					'text' => 'Request Failed',
@@ -213,6 +215,7 @@ class OCLCResourceSharingForGroupsDriver {
 				'success' => false,
 			];
 		}
+		$newRequestInAspenDb->update();
 		return [
 			'title' => translate([
 				'text' => 'Request Sent',
@@ -226,9 +229,34 @@ class OCLCResourceSharingForGroupsDriver {
 		];
 	}
 
-	public function updateRequestsInAspenDbForPatron(OCLCResourceSharingForGroupsSetting $setting, int $patronId): void {
+	private function isDuplicate(OCLCResourceSharingForGroupsSetting $setting, Int $patronId, OCLCResourceSharingForGroupsRequest $newRequestInAspenDb): bool {
+		$this->updateRequestStatusesInAspenDbForPatron($setting, $patronId);
+		$existingRequests = $this->getAllRequestsFromAspenDbForPatron($patronId);
+		foreach ($existingRequests as $existingRequest) {
+			if (!$existingRequest->catalogKey) {
+				return false;
+			}
+			if (
+				$newRequestInAspenDb->catalogKey == $existingRequest->catalogKey
+				&& $existingRequest->requestStatus != "RETURNED"
+				&& $existingRequest->requestStatus != "CLOSED"
+			) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public function updateRequestStatusesInAspenDbForPatron(OCLCResourceSharingForGroupsSetting $setting, int $patronId): void {
+		if (empty($this->_registryId)) {
+			global $logger;
+			$logger->log("Could not Authenticate: home location has not been assigned an OCLC Registry Id", Logger::LOG_ERROR);
+			throw  new Exception("This library branch is not configured to send ILL requests. Please contact your library.");
+		}
+	
 		$requests = $this->getAllRequestsFromOCLCResourceSharingForGroupsForPatron($setting, $patronId);
 		foreach ($requests as $requestInAspenDB) {
+
 			if (!empty($requestInOclcRS4G)) {
 				$requestInAspenDB->requestStatus = $requestInOclcRS4G['illRequest']['requestStatus'];
 				$requestInAspenDB->update();
@@ -239,6 +267,7 @@ class OCLCResourceSharingForGroupsDriver {
 	public function setRegistryId(int $id) {
 		$this->_registryId = $id;
 	}
+
 	public function getRegistryId(): int {
 		return $this->_registryId;
 	}
@@ -260,12 +289,22 @@ class OCLCResourceSharingForGroupsDriver {
 	}
 
 	public function getPatronsWithActiveOCLCIllRequests (): array {
+		if (empty($this->_registryId)) {
+			return [];
+		}
 		$patronsWithActiveIllRequests = [];
 		$patron = new User();
 		$patron->joinAdd(new OCLCResourceSharingForGroupsRequest(), 'LEFT', 'userRequest', 'userId' , 'id');
 		$patron->whereAdd("requestStatus <> RETURNED");
 		$patronsWithActiveIllRequests = $patron->fetchAll();
 		return $patronsWithActiveIllRequests;
+	}
+
+	private function updateRequestStatusInAspenDb (Int $oclcRequestId, $newStatus): void {
+		$request = new OCLCResourceSharingForGroupsRequest();
+		$request->oclcRequestId = $oclcRequestId;
+		$request->requestStatus = $newStatus;
+		$request->update();
 	}
 
 	// Services - interacts with the Resource Sharing Request API from OCLC
@@ -299,7 +338,6 @@ class OCLCResourceSharingForGroupsDriver {
 	}
 
 	private function postToOCLCResourceSharingForGroups(string $serviceBaseUrl, OCLCResourceSharingForGroupsRequest $newRequest): array {
-
 		require_once ROOT_DIR . '/sys/CurlWrapper.php';
 		$url = $serviceBaseUrl . "/requests";
 		$curl = new CurlWrapper();
@@ -310,7 +348,14 @@ class OCLCResourceSharingForGroupsDriver {
 		$curl->addCustomHeaders($customHeaders, false);
 		$curl->curl_connect($url);
 		$response = $curl->curlPostBodyData($url, $this->formatRequestBody($newRequest));
-		return json_decode(json_encode(simplexml_load_string($response)), true);
+		try {
+			$data = json_decode(json_encode(simplexml_load_string($response)), true);
+		} catch (Exception $e) {
+			global $logger;
+			$logger->log("HERE" . PHP_EOL, Logger::LOG_ERROR);
+			throw  new Exception($e->getMessage());
+		}
+		return $data;
 	}
 
 	private function setAccessToken(OCLCResourceSharingForGroupsSetting $setting): void {
@@ -327,8 +372,9 @@ class OCLCResourceSharingForGroupsDriver {
 		$provider = new GenericProvider($setup_options, ['optionProvider' => $basicAuth_provider]);
 		try {
 			$this->accessToken = $provider->getAccessToken('client_credentials', ['scope' => $setting->scopes . " context:" . $this->_registryId]);
+			return;
 		} catch (IdentityProviderException $e) {
-			throw  new Error($e->getMessage());
+			throw  new Exception($e->getMessage());
 		};
 	}
 
@@ -403,6 +449,7 @@ class OCLCResourceSharingForGroupsDriver {
 		$newRequest->isbn = strip_tags($requestFormData["isbn"]);
 		$newRequest->issn = strip_tags($requestFormData["issn"]);
 		$newRequest->oclcNumber = strip_tags($requestFormData["oclcNumber"]);
+		$newRequest->{$requestFormData["uniqueIdentifierKey"]} = $requestFormData["uniqueIdentifierValue"];
 		$newRequest->feeAccepted =  (isset($requestFormData['acceptFee']) && $requestFormData['acceptFee'] == 'true') ? 1 : 0;
 		$newRequest->maximumFeeAmount = strip_tags($requestFormData["maximumFeeAmount"]);
 		$newRequest->catalogKey = strip_tags($requestFormData["catalogKey"]);

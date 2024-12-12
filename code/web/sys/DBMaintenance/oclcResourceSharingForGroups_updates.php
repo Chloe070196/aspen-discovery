@@ -35,17 +35,12 @@ function getOclcResourceSharingForGroupsUpdates()
 					showAuthor BOOLEAN,
 					showEdition TINYINT(1) DEFAULT 0,
 					showPublisher TINYINT(1) DEFAULT 0,
-					showIsbn TINYINT(1) DEFAULT 0,
-					showIssn TINYINT(1) DEFAULT 0,
-					showOclcNumber TINYINT(1) DEFAULT 0,
 					showAcceptFee TINYINT(1) DEFAULT 0,
 					showMaximumFee TINYINT(1) DEFAULT 0,
-					showCatalogKey TINYINT(1) DEFAULT 0,
 					feeInformationText TEXT
 				)"
 			]
 		],
-        // TODO: write columns for each table  below
 		'add_oclc_resource_sharing_for_groups_settings_id_to_library' => [
 			'title' => 'Add OCLC Resource Sharing For Groups Settings Id To Library',
 			'description' => 'Add an oclcResourceSharingForGroupsSettingsId property to libraries so that they can be assigned the relevant OCLC Resource Sharing For Groups Setting',
@@ -80,7 +75,7 @@ function getOclcResourceSharingForGroupsUpdates()
 					authBaseUrl VARCHAR(255) NOT NULL DEFAULT 'https://oauth.oclc.org/',
 					urlResourceOwnerDetails VARCHAR(255),
 					scopes VARCHAR(255) NOT NULL,
-					expirationDate DATETIME NOT NULL
+					expirationDate DATETIME
 				)"
 			],
 		],

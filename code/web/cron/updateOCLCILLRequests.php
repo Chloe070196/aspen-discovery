@@ -23,8 +23,9 @@ foreach ($patronsWithActiveIllRequests as $patron) {
 	$setting->whereAdd("id=$settingId");
 	if ($setting->find(true)) {
 		$driver->setRegistryId($homeLocation->oclcRegistryId);
-		$driver->updateRequestsInAspenDbForPatron($setting, $patron->id);
+		$driver->updateRequestStatusesInAspenDbForPatron($setting, $patron->id);
 	}
 }
 
 die();
+

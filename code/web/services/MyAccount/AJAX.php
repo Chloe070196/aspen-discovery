@@ -3737,7 +3737,7 @@ class MyAccount_AJAX extends JSON_Action {
 					'id' => $entry->id,
 					'sourceId' => $entry->sourceId,
 					'title' => $entry->title,
-					'link' => $eventRecordDriver->getLinkUrl(),
+					// 'link' => $eventRecordDriver->getLinkUrl(),
 					'externalLink' => $eventRecordDriver->getExternalUrl(),
 					'regModalBody' => $eventRecordDriver->getRegistrationModalBody(),
 					'location' => $entry->location,
