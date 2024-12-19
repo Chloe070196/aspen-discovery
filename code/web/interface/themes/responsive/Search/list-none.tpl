@@ -130,7 +130,6 @@
 					<h2>{translate text="Didn't find it?" isPublicFacing=true}</h2>
 					<p>{translate text="Can't find what you are looking for?" isPublicFacing=true} <a href="{$externalMaterialsRequestUrl}" class="btn btn-info">{translate text='Suggest a purchase' isPublicFacing=true}</a></p>
 				</div>
-			{/if}
 			{elseif $materialRequestType == 4}
 				<div class="materialsRequestLink">
 					<h2>{translate text="Didn't find it?" isPublicFacing=true}</h2>

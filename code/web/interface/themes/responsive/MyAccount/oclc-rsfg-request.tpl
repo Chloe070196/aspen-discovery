@@ -28,21 +28,15 @@
 		<div class="row">
 			<div class="col-xs-12">
 				<span class="result-index">{$resultIndex})</span>&nbsp;
-				{if $record->getLinkUrl()}
 					{* <div class="row">
 						<div class="col-sm-10 col-sm-offset-1">
-							<h2 class="dashboardCategoryLabel">{translate text="Self Registrations" isAdminFacing=true} <a href="/ILS/UsageGraphs?stat=selfRegistrations&instance={$selectedInstance}" title="{translate text="Show Self Registrations Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a></h2>
+							<h2 class="dashboardCategoryLabel">{translate text="Self Registrations" isAdminFacing=true} <a href="" title="{translate text="Show Self Registrations Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a></h2>
 						</div>
 					</div> *}
-					<a href="{$record->getLinkUrl()}" class="result-title notranslate">
+					<a href="/OCLCRSFG/OCLCRSFGRequestDetails?requestId={$record->cancelId}" class="result-title notranslate">
 						{if !$record->getTitle()|removeTrailingPunctuation} {translate text='Title not available' isPublicFacing=true}{else}{$record->getTitle()|removeTrailingPunctuation|truncate:180:"..."|highlight}{/if}
 						{* {if !$record->getTitle()|removeTrailingPunctuation} {translate text='Title not available' isPublicFacing=true}{else}{$record->getTitle()|removeTrailingPunctuation|truncate:180:"..."|highlight}{/if} *}
 					</a>
-				{else}
-					<span class="result-title notranslate">
-						{if !$record->getTitle()|removeTrailingPunctuation} {translate text='Title not available' isPublicFacing=true}{else}{$record->getTitle()|removeTrailingPunctuation|truncate:180:"..."|highlight}{/if}
-					</span>
-				{/if}
 			</div>
 		</div>
 
