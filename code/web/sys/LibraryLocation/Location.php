@@ -98,7 +98,7 @@ class Location extends DataObject {
 	public $vdxLocation;
 	public $localIllFormId;
 	public $oclcRegistryId;
-	public $oclcResourceSharingForGroupsLocation;
+	public $oclcRSFGLocation;
 	public $systemsToRepeatIn;
 	public $homeLink;
 	public $ptypesToAllowRenewals;
@@ -279,9 +279,9 @@ class Location extends DataObject {
 			$localIllForms[$localIllForm->id] = $localIllForm->name;
 		}
 
-		require_once ROOT_DIR . '/sys/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsSetting.php';
+		require_once ROOT_DIR . '/sys/OCLCRSFG/OCLCRSFGSetting.php';
 		$oclcRS4GActive = false;
-		$oclcRS4GSettings = new OCLCResourceSharingForGroupsSetting();
+		$oclcRS4GSettings = new OCLCRSFGSetting();
 		if ($oclcRS4GSettings->find(true)) {
 			$oclcRS4GActive = true;
 		}
@@ -3148,11 +3148,11 @@ class Location extends DataObject {
 				}
 			}
 			//Local ILL and VDX are not available, check to see if OCLC Resource Sharing For Groups is available.
-			require_once ROOT_DIR . '/sys/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsSetting.php';
-			require_once ROOT_DIR . '/sys/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsForm.php';
-			$oclcResourceSharingForGroupsSettings = new OCLCResourceSharingForGroupsSetting();
-			if ($oclcResourceSharingForGroupsSettings->find(true)) {
-				if ($this->oclcResourceSharingForGroupsFormId != -1) {
+			require_once ROOT_DIR . '/sys/OCLCRSFG/OCLCRSFGSetting.php';
+			require_once ROOT_DIR . '/sys/OCLCRSFG/OCLCRSFGForm.php';
+			$oclcRSFGSettings = new OCLCRSFGSetting();
+			if ($oclcRSFGSettings->find(true)) {
+				if ($this->oclcRSFGFormId != -1) {
 					return 'oclc_resource_sharing_for_groups';
 				}
 			}

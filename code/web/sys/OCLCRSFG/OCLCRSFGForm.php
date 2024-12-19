@@ -1,6 +1,6 @@
 <?php 
 
-class OCLCResourceSharingForGroupsForm extends DataObject{
+class OCLCRSFGForm extends DataObject{
 	public $__table = 'oclc_resource_sharing_for_groups_form';
 	public $id;
 	public $name;

@@ -1,6 +1,6 @@
 <?php 
 
-class OCLCResourceSharingForGroupsSetting extends DataObject {
+class OCLCRSFGSetting extends DataObject {
 	public $__table = 'oclc_resource_sharing_for_groups_setting';
 	public $id;
 	public $name;
@@ -139,14 +139,14 @@ class OCLCResourceSharingForGroupsSetting extends DataObject {
 				$library->find(true);
 				if (in_array($libraryId, $this->_libraries)) {
 					//We want to apply the scope to this library
-					if ($library->oclcResourceSharingForGroupsSettingsId != $this->id) {
-						$library->oclcResourceSharingForGroupsSettingsId = $this->id;
+					if ($library->oclcRSFGSettingsId != $this->id) {
+						$library->oclcRSFGSettingsId = $this->id;
 						$library->update();
 					}
 				} else {
 					//It should not be applied to this scope. Only change if it was applied to the scope
-					if ($library->oclcResourceSharingForGroupsSettingsId == $this->id) {
-						$library->oclcResourceSharingForGroupsSettingsId = -1;
+					if ($library->oclcRSFGSettingsId == $this->id) {
+						$library->oclcRSFGSettingsId = -1;
 						$library->update();
 					}
 				}

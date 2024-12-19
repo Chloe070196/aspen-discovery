@@ -12,7 +12,7 @@
 						{translate text=$newMaterialsRequestSummary isPublicFacing=true isAdminEnteredData=true}
 					{/if}
 				</div>
-				{$oclcResourceSharingForGroupsForm}
+				{$oclcRSFGForm}
 			{/if}
 		</div>
 	</div>

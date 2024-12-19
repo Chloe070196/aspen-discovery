@@ -1,7 +1,7 @@
 <?php
 /** @noinspection SqlResolve */
 
-function getOclcResourceSharingForGroupsUpdates()
+function getOclcRSFGUpdates()
 {
 	return [
 		'create_oclc_resource_sharing_for_groups_module' => [
@@ -43,16 +43,16 @@ function getOclcResourceSharingForGroupsUpdates()
 		],
 		'add_oclc_resource_sharing_for_groups_settings_id_to_library' => [
 			'title' => 'Add OCLC Resource Sharing For Groups Settings Id To Library',
-			'description' => 'Add an oclcResourceSharingForGroupsSettingsId property to libraries so that they can be assigned the relevant OCLC Resource Sharing For Groups Setting',
+			'description' => 'Add an oclcRSFGSettingsId property to libraries so that they can be assigned the relevant OCLC Resource Sharing For Groups Setting',
 			'sql' => [
-				"ALTER TABLE library ADD oclcResourceSharingForGroupsSettingsId INT NOT NULL DEFAULT -1",
+				"ALTER TABLE library ADD oclcRSFGSettingsId INT NOT NULL DEFAULT -1",
 			],
 		],
 		'add_oclc_resource_sharing_for_groups_form_id_to_library' => [
 			'title' => 'Add OCLC Resource Sharing For Groups Form Id To Library',
-			'description' => 'Add an oclcResourceSharingForGroupsFormId property to libraries so that they can be assigned the relevant OCLC Resource Sharing For Groups Form',
+			'description' => 'Add an oclcRSFGFormId property to libraries so that they can be assigned the relevant OCLC Resource Sharing For Groups Form',
 			'sql' => [
-				"ALTER TABLE library ADD oclcResourceSharingForGroupsFormId INT NOT NULL DEFAULT -1",
+				"ALTER TABLE library ADD oclcRSFGFormId INT NOT NULL DEFAULT -1",
 			],
 		],
 		'add_oclc_resource_sharing_for_groups_registry_id_to_location' => [
@@ -113,7 +113,7 @@ function getOclcResourceSharingForGroupsUpdates()
 			'sql' => [
 				"CREATE TABLE oclc_resource_sharing_for_groups_hold_group_location (
 					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-					oclcResourceSharingForGroupsHoldGroupId INT UNIQUE DEFAULT NULL,
+					oclcRSFGHoldGroupId INT UNIQUE DEFAULT NULL,
 					locationId INT UNIQUE DEFAULT NULL
 				)"
 			],

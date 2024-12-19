@@ -385,9 +385,9 @@ class Library extends DataObject {
 	public $showAvailableCoversInSummon;
 
 	//OCLC Resource Sharing For Groups
-	public $oclcResourceSharingForGroupsSettingsId;
+	public $oclcRSFGSettingsId;
 
-	public $oclcResourceSharingForGroupsFormId;
+	public $oclcRSFGFormId;
 
 	//Combined Results (Bento Box)
 	public /** @noinspection PhpUnused */
@@ -806,24 +806,24 @@ class Library extends DataObject {
 			$summonSettings[$summonSetting->id] = $summonSetting->name;
 		}
 
-		require_once ROOT_DIR . '/sys/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsSetting.php';
-		$oclcResourceSharingForGroupsSetting = new OCLCResourceSharingForGroupsSetting();
-		$oclcResourceSharingForGroupsSetting->orderBy('name');
-		$oclcResourceSharingForGroupsSettings = [];
-		$oclcResourceSharingForGroupsSetting->find();
-		$oclcResourceSharingForGroupsSettings[-1] = 'none';
-		while ($oclcResourceSharingForGroupsSetting->fetch()) {
-			$oclcResourceSharingForGroupsSettings[$oclcResourceSharingForGroupsSetting->id] = $oclcResourceSharingForGroupsSetting->name;
+		require_once ROOT_DIR . '/sys/OCLCRSFG/OCLCRSFGSetting.php';
+		$oclcRSFGSetting = new OCLCRSFGSetting();
+		$oclcRSFGSetting->orderBy('name');
+		$oclcRSFGSettings = [];
+		$oclcRSFGSetting->find();
+		$oclcRSFGSettings[-1] = 'none';
+		while ($oclcRSFGSetting->fetch()) {
+			$oclcRSFGSettings[$oclcRSFGSetting->id] = $oclcRSFGSetting->name;
 		}
 
-		require_once ROOT_DIR . '/sys/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsForm.php';
-		$oclcResourceSharingForGroupsForm = new OCLCResourceSharingForGroupsForm();
-		$oclcResourceSharingForGroupsForm->orderBy('name');
-		$oclcResourceSharingForGroupsForms = [];
-		$oclcResourceSharingForGroupsForm->find();
-		$oclcResourceSharingForGroupsForms[-1] = 'none';
-		while ($oclcResourceSharingForGroupsForm->fetch()) {
-			$oclcResourceSharingForGroupsForms[$oclcResourceSharingForGroupsForm->id] = $oclcResourceSharingForGroupsForm->name;
+		require_once ROOT_DIR . '/sys/OCLCRSFG/OCLCRSFGForm.php';
+		$oclcRSFGForm = new OCLCRSFGForm();
+		$oclcRSFGForm->orderBy('name');
+		$oclcRSFGForms = [];
+		$oclcRSFGForm->find();
+		$oclcRSFGForms[-1] = 'none';
+		while ($oclcRSFGForm->fetch()) {
+			$oclcRSFGForms[$oclcRSFGForm->id] = $oclcRSFGForm->name;
 		}
 
 		require_once ROOT_DIR . '/sys/Ebsco/EBSCOhostSetting.php';
@@ -3911,26 +3911,26 @@ class Library extends DataObject {
 				],
 			],
 
-			'oclcResourceSharingForGroupsSection' => [
-				'property' => 'oclcResourceSharingForGroupsSection',
+			'oclcRSFGSection' => [
+				'property' => 'oclcRSFGSection',
 				'type' => 'section',
 				'label' => 'OCLC Resource Sharing For Groups',
 				'hideInLists' => true,
 				'renderAsHeading' => true,
 				'properties' => [
-					'oclcResourceSharingForGroupsSettingsId' => [
-						'property' => 'oclcResourceSharingForGroupsSettingsId',
+					'oclcRSFGSettingsId' => [
+						'property' => 'oclcRSFGSettingsId',
 						'type' => 'enum',
-						'values' => $oclcResourceSharingForGroupsSettings,
+						'values' => $oclcRSFGSettings,
 						'label' => 'OCLC Resource Sharing For Groups Settings',
 						'description' => 'Allow patrons of this library to make ILL requests through the OCLC Resource Sharing For Groups Settings selected',
 						'hideInLists' => true,
 						'default' => -1,
 					],
-					'oclcResourceSharingForGroupsFormsId' => [
-						'property' => 'oclcResourceSharingForGroupsFormId',
+					'oclcRSFGFormsId' => [
+						'property' => 'oclcRSFGFormId',
 						'type' => 'enum',
-						'values' => $oclcResourceSharingForGroupsForms,
+						'values' => $oclcRSFGForms,
 						'label' => 'OCLC Resource Sharing For Groups Form',
 						'description' => 'Allow patrons of this library to make ILL requests through the OCLC Resource Sharing For Groups Form selected',
 						'hideInLists' => true,

@@ -1,20 +1,20 @@
 <?php
 
 require_once ROOT_DIR . '/Action.php';
-require_once ROOT_DIR . '/sys/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsForm.php';
+require_once ROOT_DIR . '/sys/OCLCRSFG/OCLCRSFGForm.php';
 require_once ROOT_DIR . '/services/Admin/ObjectEditor.php';
 
-class OCLCResourceSharingForGroups_OCLCResourceSharingForGroupsForms extends ObjectEditor {
+class OCLCRSFG_OCLCRSFGForms extends ObjectEditor {
 	function getObjectType(): string {
-		return 'OCLCResourceSharingForGroupsForm';
+		return 'OCLCRSFGForm';
 	}
 
 	function getToolName(): string {
-		return 'OCLCResourceSharingForGroupsForms';
+		return 'OCLCRSFGForms';
 	}
 
 	function getModule(): string {
-		return 'OCLCResourceSharingForGroups';
+		return 'OCLCRSFG';
 	}
 
 	function getPageTitle(): string {
@@ -22,7 +22,7 @@ class OCLCResourceSharingForGroups_OCLCResourceSharingForGroupsForms extends Obj
 	}
 
 	function getAllObjects($page, $recordsPerPage): array {
-		$object = new OCLCResourceSharingForGroupsForm();
+		$object = new OCLCRSFGForm();
 		$object->limit(($page - 1) * $recordsPerPage, $recordsPerPage);
 		$this->applyFilters($object);
 		$object->orderBy($this->getSort());
@@ -39,7 +39,7 @@ class OCLCResourceSharingForGroups_OCLCResourceSharingForGroupsForms extends Obj
 	}
 
 	function getObjectStructure($context = ''): array {
-		return OCLCResourceSharingForGroupsForm::getObjectStructure($context);
+		return OCLCRSFGForm::getObjectStructure($context);
 	}
 
 	function getPrimaryKeyColumn(): string {
@@ -54,7 +54,7 @@ class OCLCResourceSharingForGroups_OCLCResourceSharingForGroupsForms extends Obj
 		$breadcrumbs = [];
 		$breadcrumbs[] = new Breadcrumb('/Admin/Home', 'Administration Home');
 		$breadcrumbs[] = new Breadcrumb('/Admin/Home#ill_integration', 'Interlibrary Loan');
-		$breadcrumbs[] = new Breadcrumb('/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsForms', 'OCLC Resource Sharing For Groups Forms');
+		$breadcrumbs[] = new Breadcrumb('/OCLCRSFG/OCLCRSFGForms', 'OCLC Resource Sharing For Groups Forms');
 		return $breadcrumbs;
 	}
 

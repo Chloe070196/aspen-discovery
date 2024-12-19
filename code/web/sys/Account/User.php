@@ -890,7 +890,7 @@ class User extends DataObject {
 	}
 
 	function hasInterlibraryLoan(): bool {
-		return $this->hasVDXInterlibraryLoan() || $this->hasOCLCResourceSharingForGroupsInterlibraryLoan();
+		return $this->hasVDXInterlibraryLoan() || $this->hasOCLCRSFGInterlibraryLoan();
 	}
 
 	function hasVDXInterlibraryLoan(): bool {
@@ -923,14 +923,14 @@ class User extends DataObject {
 		return false;
 	}
 	
-	function hasOCLCResourceSharingForGroupsInterlibraryLoan(): bool {
+	function hasOCLCRSFGInterlibraryLoan(): bool {
 		try {
-			require_once ROOT_DIR . '/sys/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsSetting.php';
-			require_once ROOT_DIR . '/sys/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsForm.php';
-			$OCLCResourceSharingForGroupsSettings = new OCLCResourceSharingForGroupsSetting();
+			require_once ROOT_DIR . '/sys/OCLCRSFG/OCLCRSFGSetting.php';
+			require_once ROOT_DIR . '/sys/OCLCRSFG/OCLCRSFGForm.php';
+			$OCLCRSFGSettings = new OCLCRSFGSetting();
 			$homeLibrary = Library::getPatronHomeLibrary();
-			$OCLCResourceSharingForGroupsSettings->whereAdd("id={$homeLibrary->oclcResourceSharingForGroupsSettingsId}");
-			if ($OCLCResourceSharingForGroupsSettings->find(true)) {
+			$OCLCRSFGSettings->whereAdd("id={$homeLibrary->oclcRSFGSettingsId}");
+			if ($OCLCRSFGSettings->find(true)) {
 				return true;
 			}
 		} catch (Exception $e) {
@@ -1900,16 +1900,16 @@ class User extends DataObject {
 					$allHolds = array_merge_recursive($allHolds, $vdxRequests);
 					$holdsToReturn = array_merge_recursive($holdsToReturn, $vdxRequests);
 				}
-				if ($this->hasOCLCResourceSharingForGroupsInterlibraryLoan()) {
-					require_once ROOT_DIR . '/Drivers/OCLCResourceSharingForGroupsDriver.php';
-					require_once ROOT_DIR . '/sys/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsSetting.php';
-					$OCLCResourceSharingForGroupsSettings = new OCLCResourceSharingForGroupsSetting();
-					$OCLCResourceSharingForGroupsSettings->whereAdd("id=" . Library::getActiveLibrary()->oclcResourceSharingForGroupsSettingsId);
-					if ($OCLCResourceSharingForGroupsSettings->find(true)) {
-						$driver = new OCLCResourceSharingForGroupsDriver();
-						$oclcResourceSharingForGroupsRequests = $driver->getRequests($this, $OCLCResourceSharingForGroupsSettings);
-						$allHolds = array_merge_recursive($allHolds, $oclcResourceSharingForGroupsRequests);
-						$holdsToReturn = array_merge_recursive($holdsToReturn, $oclcResourceSharingForGroupsRequests);
+				if ($this->hasOCLCRSFGInterlibraryLoan()) {
+					require_once ROOT_DIR . '/Drivers/OCLCRSFGDriver.php';
+					require_once ROOT_DIR . '/sys/OCLCRSFG/OCLCRSFGSetting.php';
+					$OCLCRSFGSettings = new OCLCRSFGSetting();
+					$OCLCRSFGSettings->whereAdd("id=" . Library::getActiveLibrary()->oclcRSFGSettingsId);
+					if ($OCLCRSFGSettings->find(true)) {
+						$driver = new OCLCRSFGDriver();
+						$oclcRSFGRequests = $driver->getRequests($this, $OCLCRSFGSettings);
+						$allHolds = array_merge_recursive($allHolds, $oclcRSFGRequests);
+						$holdsToReturn = array_merge_recursive($holdsToReturn, $oclcRSFGRequests);
 					} else {
 						$results = [
 							'title' => translate([
@@ -4597,9 +4597,9 @@ class User extends DataObject {
 		}
 
 		if (array_key_exists('OCLC Resource Sharing For Groups',  $enabledModules)) {
-			$sections['ill_integration']->addAction(new AdminAction('Resource Sharing For Groups Settings', 'Manage connections to OCLC Resource Sharing For Groups for various profiles', '/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsSettings'), 'Administer OCLC Resource Sharing For Groups Settings');
-			$sections['ill_integration']->addAction(new AdminAction('Resource Sharing For Groups Forms', 'Create forms for patrons to use to submit an ILL by selecting the fields to be displayed', '/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsForms'), 'Administer OCLC Resource Sharing For Groups Forms');
-			$sections['ill_integration']->addAction(new AdminAction('Resource Sharing For Groups Hold Groups', 'Administer Hold Groups for use with the OCLC Resource Sharing For Groups integration', '/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsHoldGroups'), 'Administer OCLC Resource Sharing For Groups Hold Groups');
+			$sections['ill_integration']->addAction(new AdminAction('Resource Sharing For Groups Settings', 'Manage connections to OCLC Resource Sharing For Groups for various profiles', '/OCLCRSFG/OCLCRSFGSettings'), 'Administer OCLC Resource Sharing For Groups Settings');
+			$sections['ill_integration']->addAction(new AdminAction('Resource Sharing For Groups Forms', 'Create forms for patrons to use to submit an ILL by selecting the fields to be displayed', '/OCLCRSFG/OCLCRSFGForms'), 'Administer OCLC Resource Sharing For Groups Forms');
+			$sections['ill_integration']->addAction(new AdminAction('Resource Sharing For Groups Hold Groups', 'Administer Hold Groups for use with the OCLC Resource Sharing For Groups integration', '/OCLCRSFG/OCLCRSFGHoldGroups'), 'Administer OCLC Resource Sharing For Groups Hold Groups');
 			// TODO: add dashboard if / when usage starts being monitored
 		}
 

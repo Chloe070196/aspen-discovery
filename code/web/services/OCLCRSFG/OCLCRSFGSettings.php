@@ -2,19 +2,19 @@
 
 require_once ROOT_DIR . '/Action.php';
 require_once ROOT_DIR . '/services/Admin/ObjectEditor.php';
-require_once ROOT_DIR . '/sys/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsSetting.php';
+require_once ROOT_DIR . '/sys/OCLCRSFG/OCLCRSFGSetting.php';
 
-class OCLCResourceSharingForGroups_OCLCResourceSharingForGroupsSettings extends ObjectEditor {
+class OCLCRSFG_OCLCRSFGSettings extends ObjectEditor {
 	function getObjectType(): string {
-		return 'OCLCResourceSharingForGroupsSetting';
+		return 'OCLCRSFGSetting';
 	}
 
 	function getToolName(): string {
-		return 'OCLCResourceSharingForGroupsSettings';
+		return 'OCLCRSFGSettings';
 	}
 
 	function getModule(): string {
-		return 'OCLCResourceSharingForGroups';
+		return 'OCLCRSFG';
 	}
 
 	function getPageTitle(): string {
@@ -22,7 +22,7 @@ class OCLCResourceSharingForGroups_OCLCResourceSharingForGroupsSettings extends 
 	}
 
 	function getAllObjects($page, $recordsPerPage): array {
-		$object = new OCLCResourceSharingForGroupsSetting();
+		$object = new OCLCRSFGSetting();
 		$object->limit(($page - 1) * $recordsPerPage, $recordsPerPage);
 		$this->applyFilters($object);
 		$object->orderBy($this->getSort());
@@ -39,7 +39,7 @@ class OCLCResourceSharingForGroups_OCLCResourceSharingForGroupsSettings extends 
 	}
 
 	function getObjectStructure($context = ''): array {
-		return OCLCResourceSharingForGroupsSetting::getObjectStructure($context);
+		return OCLCRSFGSetting::getObjectStructure($context);
 	}
 
 	function getPrimaryKeyColumn(): string {
@@ -62,7 +62,7 @@ class OCLCResourceSharingForGroups_OCLCResourceSharingForGroupsSettings extends 
 		$breadcrumbs = [];
 		$breadcrumbs[] = new Breadcrumb('/Admin/Home', 'Administration Home');
 		$breadcrumbs[] = new Breadcrumb('/Admin/Home#ill_integration', 'Interlibrary Loan');
-		$breadcrumbs[] = new Breadcrumb('/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsSettings', 'OCLC Resource Sharing For Groups Settings');
+		$breadcrumbs[] = new Breadcrumb('/OCLCRSFG/OCLCRSFGSettings', 'OCLC Resource Sharing For Groups Settings');
 		return $breadcrumbs;
 	}
 

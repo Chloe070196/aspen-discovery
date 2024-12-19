@@ -1,13 +1,13 @@
 <?php
-require_once ROOT_DIR . '/sys/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsRequest.php';
-require_once ROOT_DIR . '/sys/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsSetting.php';
+require_once ROOT_DIR . '/sys/OCLCRSFG/OCLCRSFGRequest.php';
+require_once ROOT_DIR . '/sys/OCLCRSFG/OCLCRSFGSetting.php';
 require_once ROOT_DIR . '/sys/Utils/StringUtils.php';
 
 use League\OAuth2\Client\OptionProvider\HttpBasicAuthOptionProvider;
 use League\OAuth2\Client\Provider\GenericProvider;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 
-class OCLCResourceSharingForGroupsDriver {
+class OCLCRSFGDriver {
 	private $accessToken;
 	private $_registryId;
 
@@ -22,19 +22,19 @@ class OCLCResourceSharingForGroupsDriver {
 		[
 			$existingId,
 			$summary,
-		] = $user->getCachedAccountSummary('oclcResourceSharingForGroups');
+		] = $user->getCachedAccountSummary('oclcRSFG');
 
 		if ($summary === null || isset($_REQUEST['reload'])) {
 			//Get account information from api
 			require_once ROOT_DIR . '/sys/User/AccountSummary.php';
 			$summary = new AccountSummary();
 			$summary->userId = $user->id;
-			$summary->source = 'oclcResourceSharingForGroups';
+			$summary->source = 'oclcRSFG';
 			$summary->resetCounters();
 
-			$settings = new OCLCResourceSharingForGroupsSetting();
+			$settings = new OCLCRSFGSetting();
 			$homeLibrary = Library::getPatronHomeLibrary();
-			$settings->whereAdd("id={$homeLibrary->oclcResourceSharingForGroupsSettingsId}");
+			$settings->whereAdd("id={$homeLibrary->oclcRSFGSettingsId}");
 			if($settings->find()) {
 				$settings->fetch();
 			}
@@ -74,7 +74,7 @@ class OCLCResourceSharingForGroupsDriver {
 		$processedRequests = [];
 		foreach ($requestsSent as $requestInAspenDB) {
 			if ($requestInAspenDB->oclcRequestId) {
-				$requestInOclcRS4G = $this->getRequestFromOCLCResourceSharingForGroupsWithId($setting, $requestInAspenDB->oclcRequestId);
+				$requestInOclcRS4G = $this->getRequestFromOCLCRSFGWithId($setting, $requestInAspenDB->oclcRequestId);
 			}
 			if (!empty($requestInOclcRS4G)) {
 				$requestInAspenDB->requestStatus = $requestInOclcRS4G['illRequest']['requestStatus'];
@@ -99,7 +99,7 @@ class OCLCResourceSharingForGroupsDriver {
 		];
 	}
 
-	public function submitRequest(OCLCResourceSharingForGroupsSetting $setting, User $patron, $requestFormData): array {
+	public function submitRequest(OCLCRSFGSetting $setting, User $patron, $requestFormData): array {
 		if (empty($this->_registryId)) {
 			global $logger;
 			$logger->log("Could not Authenticate: home location has not been assigned an OCLC Registry Id", Logger::LOG_ERROR);
@@ -126,7 +126,7 @@ class OCLCResourceSharingForGroupsDriver {
 			];
 		}
 
-		$newRequestInAspenDb = new OCLCResourceSharingForGroupsRequest();
+		$newRequestInAspenDb = new OCLCRSFGRequest();
 		$this->populateNewRequest($newRequestInAspenDb, $requestFormData, $patron);
 
 		if ($this->isDuplicate($setting, $patron->id, $newRequestInAspenDb)) {
@@ -144,7 +144,7 @@ class OCLCResourceSharingForGroupsDriver {
 		}
 		$newRequestInAspenDb->insert();
 		try {
-			$IllRequestCreated = $this->postToOCLCResourceSharingForGroups($setting->serviceBaseUrl, $newRequestInAspenDb);
+			$IllRequestCreated = $this->postToOCLCRSFG($setting->serviceBaseUrl, $newRequestInAspenDb);
 			$newRequestInAspenDb->requestStatus = $IllRequestCreated['responses']['illRequest']['requestStatus'];
 			$newRequestInAspenDb->oclcRequestId = $IllRequestCreated['responses']['illRequest']['requestId'];
 		} catch (Exception $e) {
@@ -176,7 +176,7 @@ class OCLCResourceSharingForGroupsDriver {
 		];
 	}
 
-	private function isDuplicate(OCLCResourceSharingForGroupsSetting $setting, Int $patronId, OCLCResourceSharingForGroupsRequest $newRequestInAspenDb): bool {
+	private function isDuplicate(OCLCRSFGSetting $setting, Int $patronId, OCLCRSFGRequest $newRequestInAspenDb): bool {
 		$this->updateRequestStatusesInAspenDbForPatron($setting, $patronId);
 		$existingRequests = $this->getAllRequestsFromAspenDbForPatron($patronId);
 		foreach ($existingRequests as $existingRequest) {
@@ -194,13 +194,13 @@ class OCLCResourceSharingForGroupsDriver {
 		return false;
 	}
 
-	public function updateRequestStatusesInAspenDbForPatron(OCLCResourceSharingForGroupsSetting $setting, int $patronId): void {
+	public function updateRequestStatusesInAspenDbForPatron(OCLCRSFGSetting $setting, int $patronId): void {
 		if (empty($this->_registryId)) {
 			global $logger;
 			$logger->log("Could not Authenticate: home location has not been assigned an OCLC Registry Id", Logger::LOG_ERROR);
 			throw  new Exception("This library branch is not configured to send ILL requests. Please contact your library.");
 		}
-		$requests = $this->getAllRequestsFromOCLCResourceSharingForGroupsForPatron($setting, $patronId);
+		$requests = $this->getAllRequestsFromOCLCRSFGForPatron($setting, $patronId);
 		foreach ($requests as $requestInAspenDB) {
 			if (!empty($requestInOclcRS4G)) {
 				$requestInAspenDB->requestStatus = $requestInOclcRS4G['illRequest']['requestStatus'];
@@ -213,7 +213,7 @@ class OCLCResourceSharingForGroupsDriver {
 
 	private function getAllRequestsFromAspenDbForPatron(Int $patronId): array {
 		$requestsToProcess = [];
-		$request = new OCLCResourceSharingForGroupsRequest();
+		$request = new OCLCRSFGRequest();
 		$request->userId = $patronId;
 		$request->find();
 		while ($request->fetch()) {
@@ -226,7 +226,7 @@ class OCLCResourceSharingForGroupsDriver {
 
 	// Services - interacts with the Resource Sharing Request API from OCLC
 
-	private function getAllRequestsFromOCLCResourceSharingForGroupsForPatron(OCLCResourceSharingForGroupsSetting $setting, Int $patronId): array {
+	private function getAllRequestsFromOCLCRSFGForPatron(OCLCRSFGSetting $setting, Int $patronId): array {
 		require_once ROOT_DIR . '/sys/CurlWrapper.php';
 		$searchTerm = "searchTerm=patronID";
 		$searchValue = "searchValue=" . "$patronId";
@@ -241,7 +241,7 @@ class OCLCResourceSharingForGroupsDriver {
 		return json_decode(json_encode(simplexml_load_string($response)), true)['responses'];
 	}
 
-	private function getRequestFromOCLCResourceSharingForGroupsWithId(OCLCResourceSharingForGroupsSetting $setting, Int $oclcRequestId): array {
+	private function getRequestFromOCLCRSFGWithId(OCLCRSFGSetting $setting, Int $oclcRequestId): array {
 		require_once ROOT_DIR . '/sys/CurlWrapper.php';
 		$url = $setting->serviceBaseUrl . "/requests" . "/" . $oclcRequestId;
 		$curl = new CurlWrapper();
@@ -254,7 +254,7 @@ class OCLCResourceSharingForGroupsDriver {
 		return json_decode(json_encode(simplexml_load_string($response)), true)['responses'];
 	}
 
-	private function postToOCLCResourceSharingForGroups(string $serviceBaseUrl, OCLCResourceSharingForGroupsRequest $newRequest): array {
+	private function postToOCLCRSFG(string $serviceBaseUrl, OCLCRSFGRequest $newRequest): array {
 		require_once ROOT_DIR . '/sys/CurlWrapper.php';
 		$url = $serviceBaseUrl . "/requests";
 		$curl = new CurlWrapper();
@@ -275,7 +275,7 @@ class OCLCResourceSharingForGroupsDriver {
 		return $data;
 	}
 
-	private function setAccessToken(OCLCResourceSharingForGroupsSetting $setting): void {
+	private function setAccessToken(OCLCRSFGSetting $setting): void {
 		require_once 'oauth2_client_php_league/autoload.php';
 		$basicAuth_provider = new HttpBasicAuthOptionProvider();
 		$setup_options = [
@@ -302,7 +302,7 @@ class OCLCResourceSharingForGroupsDriver {
 		$curRequest->userId = $patronId;
 		$curRequest->type = 'interlibrary_loan';
 		$curRequest->isIll = true;
-		$curRequest->source = 'oclcResourceSharingForGroups';
+		$curRequest->source = 'oclcRSFG';
 		$curRequest->sourceId = $request->catalogKey;
 		$curRequest->recordId = $request->catalogKey;
 		$curRequest->title = $request->title;
@@ -317,7 +317,7 @@ class OCLCResourceSharingForGroupsDriver {
 		return $curRequest;
 	}
 
-	private function formatRequestBody(OCLCResourceSharingForGroupsRequest $newRequest): object {
+	private function formatRequestBody(OCLCRSFGRequest $newRequest): object {
 		$illRequest = [];
 		$illRequest["requestStatus"] = "PROFILING";
 		$illRequest["requester"] = [
@@ -345,7 +345,7 @@ class OCLCResourceSharingForGroupsDriver {
 		return (object)["illRequest" => $illRequest];
 	}
 
-	private function populateNewRequest(OCLCResourceSharingForGroupsRequest $newRequest, &$requestFormData, User $patron): void {
+	private function populateNewRequest(OCLCRSFGRequest $newRequest, &$requestFormData, User $patron): void {
 		$newRequest->datePlaced = $requestFormData["datePlaced"];
 		$newRequest->title = strip_tags($requestFormData["title"]);
 		$newRequest->author = strip_tags($requestFormData["author"]);
@@ -362,7 +362,7 @@ class OCLCResourceSharingForGroupsDriver {
 		$newRequest->oclcRequesterRegistryId = $this->_registryId;
 		$newRequest->userId = $patron->id;
 		$patronHomeLocation = $patron->getHomeLocation();
-		$pickupLocation = empty($patronHomeLocation->oclcResourceSharingForGroupsLocation) ? $patronHomeLocation->code : $patronHomeLocation->oclcResourceSharingForGroupsLocation;
+		$pickupLocation = empty($patronHomeLocation->oclcRSFGLocation) ? $patronHomeLocation->code : $patronHomeLocation->oclcRSFGLocation;
 		$newRequest->pickupLocation = $pickupLocation;
 	}
 }

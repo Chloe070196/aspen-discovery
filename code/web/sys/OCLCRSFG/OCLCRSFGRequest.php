@@ -1,6 +1,6 @@
 <?php
 
-class OCLCResourceSharingForGroupsRequest extends DataObject {
+class OCLCRSFGRequest extends DataObject {
 	public $__table = 'user_oclc_resource_sharing_for_groups_request';
 	public $id;
 	public $oclcRequestId; // as assigned upon submission

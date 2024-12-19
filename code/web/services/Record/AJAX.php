@@ -360,7 +360,7 @@ class Record_AJAX extends Action {
 		return $results;
 	}
 
-	function getOCLCResourceSharingForGroupsRequestForm() {
+	function getOCLCRSFGRequestForm() {
 		global $interface;
 		if (UserAccount::isLoggedIn()) {
 			$user = UserAccount::getLoggedInUser();
@@ -373,15 +373,15 @@ class Record_AJAX extends Action {
 			}
 			$recordSource = $_REQUEST['recordSource'];
 			$interface->assign('recordSource', $recordSource);
-			require_once ROOT_DIR . '/sys/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsSetting.php';
-			require_once ROOT_DIR . '/sys/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsForm.php';
-			$OCLCResourceSharingForGroupsSettings = new OCLCResourceSharingForGroupsSetting();
-			if ($OCLCResourceSharingForGroupsSettings->find(true)) {
+			require_once ROOT_DIR . '/sys/OCLCRSFG/OCLCRSFGSetting.php';
+			require_once ROOT_DIR . '/sys/OCLCRSFG/OCLCRSFGForm.php';
+			$OCLCRSFGSettings = new OCLCRSFGSetting();
+			if ($OCLCRSFGSettings->find(true)) {
 				$activeLibrary = Library::getActiveLibrary();
 				if ($activeLibrary != null) {
-					$OCLCResourceSharingForGroupsForm = new OCLCResourceSharingForGroupsForm();
-					$OCLCResourceSharingForGroupsForm->id = $activeLibrary->OCLCResourceSharingForGroupsFormId;
-					if ($OCLCResourceSharingForGroupsForm->find(true)) {
+					$rsfgForm = new OCLCRSFGForm();
+					$rsfgForm->id = $activeLibrary->OCLCRSFGFormId;
+					if ($rsfgForm->find(true)) {
 						$accountSummary = $user->getAccountSummary();
 						if ($accountSummary->isExpired()) {
 							$results = [
@@ -411,17 +411,17 @@ class Record_AJAX extends Action {
 							];
 						} else {
 							$marcRecord = new MarcRecordDriver($id);
-							$interface->assign('OCLCResourceSharingForGroupsForm', $OCLCResourceSharingForGroupsForm);
-							$OCLCResourceSharingForGroupsFormFields = $OCLCResourceSharingForGroupsForm->getFormFields($marcRecord);
-							$interface->assign('structure', $OCLCResourceSharingForGroupsFormFields);
-							$interface->assign('OCLCResourceSharingForGroupsFormFields', $interface->fetch('DataObjectUtil/ajaxForm.tpl'));
+							$interface->assign('OCLCRSFGForm', $rsfgForm);
+							$rsfgFormFields = $rsfgForm->getFormFields($marcRecord);
+							$interface->assign('structure', $rsfgFormFields);
+							$interface->assign('rsfgFormFields', $interface->fetch('DataObjectUtil/ajaxForm.tpl'));
 							$results = [
 								'title' => translate([
 									'text' => 'Request Title',
 									'isPublicFacing' => true,
 								]),
-								'modalBody' => $interface->fetch("Record/vdx-request-popup.tpl"),
-								'modalButtons' => '<a href="#" class="btn btn-primary" onclick="return AspenDiscovery.Record.submitOCLCResourceSharingForGroupsRequest(\'Record\', \'' . $id . '\')">' . translate([
+								'modalBody' => $interface->fetch("Record/oclc-rsfg-request-popup.tpl"),
+								'modalButtons' => '<a href="#" class="btn btn-primary" onclick="return AspenDiscovery.Record.submitOCLCRSFGRequest(\'Record\', \'' . $id . '\')">' . translate([
 										'text' => 'Place Request',
 										'isPublicFacing' => true,
 									]) . '</a>',
@@ -485,16 +485,16 @@ class Record_AJAX extends Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function submitOCLCResourceSharingForGroupsRequest(): array {
+	function submitOCLCRSFGRequest(): array {
 		if (UserAccount::isLoggedIn()) {
-			require_once ROOT_DIR . '/Drivers/OCLCResourceSharingForGroupsDriver.php';
-			require_once ROOT_DIR . '/sys/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsSetting.php';
-			require_once ROOT_DIR . '/sys/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsForm.php';
-			$OCLCResourceSharingForGroupsSettings = new OCLCResourceSharingForGroupsSetting();
-			$OCLCResourceSharingForGroupsSettings->whereAdd("id=" . Library::getActiveLibrary()->oclcResourceSharingForGroupsSettingsId);
-			if ($OCLCResourceSharingForGroupsSettings->find(true)) {
-				$OCLCResourceSharingForGroupsDriver = new OCLCResourceSharingForGroupsDriver();
-				$results = $OCLCResourceSharingForGroupsDriver->submitRequest($OCLCResourceSharingForGroupsSettings, UserAccount::getActiveUserObj(), $_REQUEST, false);
+			require_once ROOT_DIR . '/Drivers/OCLCRSFGDriver.php';
+			require_once ROOT_DIR . '/sys/OCLCRSFG/OCLCRSFGSetting.php';
+			require_once ROOT_DIR . '/sys/OCLCRSFG/OCLCRSFGForm.php';
+			$OCLCRSFGSettings = new OCLCRSFGSetting();
+			$OCLCRSFGSettings->whereAdd("id=" . Library::getActiveLibrary()->oclcRSFGSettingsId);
+			if ($OCLCRSFGSettings->find(true)) {
+				$OCLCRSFGDriver = new OCLCRSFGDriver();
+				$results = $OCLCRSFGDriver->submitRequest($OCLCRSFGSettings, UserAccount::getActiveUserObj(), $_REQUEST, false);
 			} else {
 				$results = [
 					'title' => translate([

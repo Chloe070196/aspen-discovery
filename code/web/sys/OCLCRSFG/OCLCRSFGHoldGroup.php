@@ -1,8 +1,8 @@
 <?php
 
-require_once ROOT_DIR . '/sys/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsHoldGroupLocation.php';
+require_once ROOT_DIR . '/sys/OCLCRSFG/OCLCRSFGHoldGroupLocation.php';
 
-class OCLCResourceSharingForGroupsHoldGroup extends DataObject {
+class OCLCRSFGHoldGroup extends DataObject {
 	public $__table = 'oclc_resource_sharing_for_groups_hold_group';
 	public $id;
 	public $name;
@@ -71,7 +71,7 @@ class OCLCResourceSharingForGroupsHoldGroup extends DataObject {
 	public function delete($useWhere = false) : int {
 		$ret = parent::delete($useWhere);
 		if ($ret && !empty($this->id)) {
-			$holdGroupLocation = new OCLCResourceSharingForGroupsHoldGroupLocation();
+			$holdGroupLocation = new OCLCRSFGHoldGroupLocation();
 			$holdGroupLocation->vdxHoldGroupId = $this->id;
 			$holdGroupLocation->delete(true);
 		}
@@ -92,7 +92,7 @@ class OCLCResourceSharingForGroupsHoldGroup extends DataObject {
 	public function getLocations(): ?array {
 		if (!isset($this->_locations) && $this->id) {
 			$this->_locations = [];
-			$obj = new OCLCResourceSharingForGroupsHoldGroupLocation();
+			$obj = new OCLCRSFGHoldGroupLocation();
 			$obj->vdxHoldGroupId = $this->id;
 			$obj->find();
 			while ($obj->fetch()) {
@@ -130,7 +130,7 @@ class OCLCResourceSharingForGroupsHoldGroup extends DataObject {
 		if (isset ($this->_locations) && is_array($this->_locations)) {
 			$locationList = Location::getLocationList(!UserAccount::userHasPermission('Administer OCLC Resource Sharing For Groups Hold Groups'));
 			foreach ($locationList as $locationId => $displayName) {
-				$obj = new OCLCResourceSharingForGroupsHoldGroupLocation();
+				$obj = new OCLCRSFGHoldGroupLocation();
 				$obj->vdxHoldGroupId = $this->id;
 				$obj->locationId = $locationId;
 				if (in_array($locationId, $this->_locations)) {

@@ -2838,9 +2838,9 @@ class MyAccount_AJAX extends JSON_Action {
 					'success' => true,
 					'summary' => $vdxSummary->toArray(),
 				];
-			} elseif ($user->hasOCLCResourceSharingForGroupsInterlibraryLoan()) {
-				require_once ROOT_DIR . '/Drivers/OCLCResourceSharingForGroupsDriver.php';
-				$driver = new OCLCResourceSharingForGroupsDriver();
+			} elseif ($user->hasOCLCRSFGInterlibraryLoan()) {
+				require_once ROOT_DIR . '/Drivers/OCLCRSFGDriver.php';
+				$driver = new OCLCRSFGDriver();
 				$oclcRS4GSummary = $driver->getAccountSummary($user);
 				if ($user->getLinkedUsers() != null) {
 					/** @var User $user */

@@ -3,12 +3,12 @@
 
 require_once ROOT_DIR . "/Action.php";
 
-class MaterialsRequest_NewRequestOCLCResourceSharingForGroups extends Action {
+class MaterialsRequest_NewRequestOCLCRSFG extends Action {
 	function launch() {
 		global $interface;
 		
 		if (!UserAccount::isLoggedIn()) {
-			header('Location: /MyAccount/Home?followupModule=MaterialsRequest&followupAction=NewRequestOCLCResourceSharingForGroups');
+			header('Location: /MyAccount/Home?followupModule=MaterialsRequest&followupAction=NewRequestOCLCRSFG');
 			exit;
 		} else {
 			$user = UserAccount::getActiveUserObj();
@@ -17,10 +17,10 @@ class MaterialsRequest_NewRequestOCLCResourceSharingForGroups extends Action {
 			$interface->assign('patronId', $patronId);
 
 			
-			require_once ROOT_DIR . '/Drivers/OCLCResourceSharingForGroupsDriver.php';
-			require_once ROOT_DIR . '/sys/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsSetting.php';
-			require_once ROOT_DIR . '/sys/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsForm.php';
-			$settings = new OCLCResourceSharingForGroupsSetting();
+			require_once ROOT_DIR . '/Drivers/OCLCRSFGDriver.php';
+			require_once ROOT_DIR . '/sys/OCLCRSFG/OCLCRSFGSetting.php';
+			require_once ROOT_DIR . '/sys/OCLCRSFG/OCLCRSFGForm.php';
+			$settings = new OCLCRSFGSetting();
 			$error = false;
 			global $logger;
 			$logger->log('HERE' . PHP_EOL, Logger::LOG_ERROR);
@@ -29,7 +29,7 @@ class MaterialsRequest_NewRequestOCLCResourceSharingForGroups extends Action {
 			$logger->log(json_encode($_REQUEST) . PHP_EOL, Logger::LOG_ERROR);
 			if ($settings->find(true)) {
 				if (isset($_REQUEST['submit'])) {
-					$driver = new OCLCResourceSharingForGroupsDriver();
+					$driver = new OCLCRSFGDriver();
 					$results = $driver->submitRequest($settings, UserAccount::getActiveUserObj(), $_REQUEST, true);
 					$logger->log(json_encode($result) . PHP_EOL, Logger::LOG_ERROR);
 
@@ -43,15 +43,15 @@ class MaterialsRequest_NewRequestOCLCResourceSharingForGroups extends Action {
 				$homeLocation = Location::getDefaultLocationForUser();
 				if ($homeLocation != null) {
 					//Get configuration for the form.
-					$form = new OCLCResourceSharingForGroupsForm();
-					$form->id = $homeLocation->OCLCResourceSharingForGroupsFormId;
+					$form = new OCLCRSFGForm();
+					$form->id = $homeLocation->OCLCRSFGFormId;
 					if ($form->find(true)) {
-						$interface->assign('OCLCResourceSharingForGroupsForm', $form);
+						$interface->assign('OCLCRSFGForm', $form);
 						$formFields = $form->getFormFields(null);
 						$interface->assign('structure', $formFields);
 						$interface->assign('saveButtonText', 'Submit Request');
 						$fieldsForm = $interface->fetch('DataObjectUtil/objectEditForm.tpl');
-						$interface->assign('oclcResourceSharingForGroupsForm', $fieldsForm);
+						$interface->assign('oclcRSFGForm', $fieldsForm);
 					} else {
 						$error = translate([
 							'text' => "Unable to find the specified form.",
@@ -73,7 +73,7 @@ class MaterialsRequest_NewRequestOCLCResourceSharingForGroups extends Action {
 
 			$interface->assign('error', $error);
 
-			$this->display('oclcResourceSharingForGroupsRequest.tpl', 'Materials Request');
+			$this->display('oclc-rsfg-request.tpl', 'Materials Request');
 		}
 	}
 

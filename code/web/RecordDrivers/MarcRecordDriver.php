@@ -1090,24 +1090,24 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 					$volumeData = $relatedRecord->getVolumeData();
 				}
 
-				$useOCLCResourceSharingForGroups = false;
+				$useOCLCRSFG = false;
 				$oclcRSFGGroupsForLocation = [];
 				try {
-					require_once ROOT_DIR . '/sys/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsSetting.php';
-					require_once ROOT_DIR . '/sys/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsHoldGroup.php';
-					require_once ROOT_DIR . '/sys/OCLCResourceSharingForGroups/OCLCResourceSharingForGroupsHoldGroupLocation.php';
-					$oclcRSFGSettings = new OCLCResourceSharingForGroupsSetting();
+					require_once ROOT_DIR . '/sys/OCLCRSFG/OCLCRSFGSetting.php';
+					require_once ROOT_DIR . '/sys/OCLCRSFG/OCLCRSFGHoldGroup.php';
+					require_once ROOT_DIR . '/sys/OCLCRSFG/OCLCRSFGHoldGroupLocation.php';
+					$oclcRSFGSettings = new OCLCRSFGSetting();
 					$homeLibrary = Library::getActiveLibrary();
-					$oclcRSFGSettings->whereAdd("id={$homeLibrary->oclcResourceSharingForGroupsSettingsId}");
+					$oclcRSFGSettings->whereAdd("id={$homeLibrary->oclcRSFGSettingsId}");
 					if ($oclcRSFGSettings->find(true)) {
-						$useOCLCResourceSharingForGroups = true;
+						$useOCLCRSFG = true;
 						$homeLocation = Location::getDefaultLocationForUser();
 						if (!empty($homeLocation)) {
-							$oclcRSFGGroupsForLocation = new OCLCResourceSharingForGroupsHoldGroupLocation();
-							$oclcRSFGGroupIds = $oclcRSFGGroupsForLocation->fetchAll('oclcResourceSharingForGroupsHoldGroupId');
+							$oclcRSFGGroupsForLocation = new OCLCRSFGHoldGroupLocation();
+							$oclcRSFGGroupIds = $oclcRSFGGroupsForLocation->fetchAll('oclcRSFGHoldGroupId');
 							$oclcRSFGGroups = [];
 							foreach ($oclcRSFGGroupIds as $oclcRSFGGroupId) {
-								$oclcRSFGGroup = new OCLCResourceSharingForGroupsHoldGroup();
+								$oclcRSFGGroup = new OCLCRSFGHoldGroup();
 								$oclcRSFGGroup->id = $oclcRSFGGroupId;
 								if ($oclcRSFGGroup->find(true)) {
 									$oclcRSFGGroups[] = clone $oclcRSFGGroup;
@@ -1121,17 +1121,17 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 										if ($itemDetail->holdable) {
 											//The patron's home location is always valid!
 											if ($itemDetail->locationCode == $homeLocation->code) {
-												$useOCLCResourceSharingForGroups = false;
+												$useOCLCRSFG = false;
 												break;
 											}
 											foreach ($oclcRSFGGroups as $oclcRSFGGroup) {
 												if (in_array($itemDetail->locationCode, $oclcRSFGGroup->getLocationCodes())) {
-													$useOCLCResourceSharingForGroups = false;
+													$useOCLCRSFG = false;
 													break;
 												}
 											}
 										}
-										if (!$useOCLCResourceSharingForGroups) {
+										if (!$useOCLCRSFG) {
 											break;
 										}
 									}
@@ -1143,7 +1143,7 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 					//This happens if the tables are not installed yet
 				}
 				
-				if(!$useOCLCResourceSharingForGroups) {
+				if(!$useOCLCRSFG) {
 					//See if we have InterLibrary Loan integration. If so, we will either be placing a hold or requesting depending on if there is a copy local to the hold group (whether available or not)
 					$interLibraryLoanType = 'none';
 					$vdxGroupsForLocation = [];
@@ -1320,10 +1320,10 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 							'isPublicFacing' => true,
 						]),
 						'url' => '',
-						'onclick' => "return AspenDiscovery.Record.showOCLCResourceSharingForGroupsRequest('{$this->getModule()}', '$source', '$id');",
+						'onclick' => "return AspenDiscovery.Record.showOCLCRSFGRequest('{$this->getModule()}', '$source', '$id');",
 						'requireLogin' => false,
-						'type' => 'OCLCResourceSharingForGroupsRequest_request',
-						'btnType' => 'btn-OCLCResourceSharingForGroupsRequest-request btn-action'
+						'type' => 'OCLCRSFGRequest_request',
+						'btnType' => 'btn-OCLCRSFGRequest-request btn-action'
 					];
 				}
 			}

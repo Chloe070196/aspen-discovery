@@ -103,7 +103,6 @@
 		{* DPLA Results *}
 		<div id='dplaSearchResultsPlaceholder'></div>
 	{/if}
-
 	{if $displayMaterialsRequest && empty($offline)}
 		{if $materialRequestType == 1}
 			<div class="materialsRequestLink">
@@ -130,7 +129,7 @@
 			<div class="materialsRequestLink">
 				<h2>{translate text="Didn't find it?" isPublicFacing=true}</h2>
 				<p>
-					{translate text="Can't find what you are looking for? Try our Materials Request Service." isPublicFacing=true} <a href="/MaterialsRequest/NewRequestOCLCResourceSharingForGroups" class="btn btn-sm btn-info" onclick="return AspenDiscovery.Account.followLinkIfLoggedIn(this);">{translate text='Submit Request' isPublicFacing=true}</a>
+					{translate text="Can't find what you are looking for? Try our Materials Request Service." isPublicFacing=true} <a href="/MaterialsRequest/NewRequestOCLCRSFG" class="btn btn-sm btn-info" onclick="return AspenDiscovery.Account.followLinkIfLoggedIn(this);">{translate text='Submit Request' isPublicFacing=true}</a>
 				</p>
 			</div>
 		{/if}

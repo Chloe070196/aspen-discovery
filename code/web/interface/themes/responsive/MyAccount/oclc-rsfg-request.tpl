@@ -1,6 +1,6 @@
 {strip}
 	{* Overall hold *}
-<div class="result row" id="oclcResourceSharingForGroupsHold_{$record->sourceId|escapeCSS}_{$record->cancelId|escapeCSS}">
+<div class="result row" id="oclcRSFGHold_{$record->sourceId|escapeCSS}_{$record->cancelId|escapeCSS}">
 	<div class="selectTitle col-xs-12 col-sm-1">
 		<input type="checkbox" name="selected[{$record->userId}|{$record->sourceId}|{$record->cancelId}]" class="titleSelect" id="selected{$record->cancelId}">
 	</div>
@@ -29,8 +29,14 @@
 			<div class="col-xs-12">
 				<span class="result-index">{$resultIndex})</span>&nbsp;
 				{if $record->getLinkUrl()}
+					{* <div class="row">
+						<div class="col-sm-10 col-sm-offset-1">
+							<h2 class="dashboardCategoryLabel">{translate text="Self Registrations" isAdminFacing=true} <a href="/ILS/UsageGraphs?stat=selfRegistrations&instance={$selectedInstance}" title="{translate text="Show Self Registrations Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a></h2>
+						</div>
+					</div> *}
 					<a href="{$record->getLinkUrl()}" class="result-title notranslate">
 						{if !$record->getTitle()|removeTrailingPunctuation} {translate text='Title not available' isPublicFacing=true}{else}{$record->getTitle()|removeTrailingPunctuation|truncate:180:"..."|highlight}{/if}
+						{* {if !$record->getTitle()|removeTrailingPunctuation} {translate text='Title not available' isPublicFacing=true}{else}{$record->getTitle()|removeTrailingPunctuation|truncate:180:"..."|highlight}{/if} *}
 					</a>
 				{else}
 					<span class="result-title notranslate">
@@ -107,7 +113,7 @@
 			<div class="col-xs-9 col-sm-8 col-md-4 col-lg-3">
 				<div class="btn-group btn-group-vertical btn-block">
 					{if $record->cancelable}
-						<button onclick="return AspenDiscovery.Account.cancelOCLCResourceSharingForGroupsRequest('{$record->userId}', '{$record->sourceId}', '{$record->cancelId}');" class="btn btn-sm btn-warning">{translate text="Cancel Request" isPublicFacing=true}</button>
+						<button onclick="return AspenDiscovery.Account.cancelOCLCRSFGRequest('{$record->userId}', '{$record->sourceId}', '{$record->cancelId}');" class="btn btn-sm btn-warning">{translate text="Cancel Request" isPublicFacing=true}</button>
 					{/if}
 				</div>
 				{if !empty($showWhileYouWait)}
