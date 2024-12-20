@@ -370,6 +370,7 @@ class OCLCRSFGDriver {
 	// Helpers
 
 	private function createTemporaryHold($patronId, $request): Hold {
+		require_once ROOT_DIR . '/sys/User/Hold.php';
 		$curRequest = new Hold();
 		$curRequest->userId = $patronId;
 		$curRequest->type = 'interlibrary_loan';

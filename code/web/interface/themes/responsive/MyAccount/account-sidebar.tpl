@@ -99,7 +99,7 @@
 										<li class="myAccountLink">
 											&nbsp;&nbsp;&raquo;&nbsp;
 											<a href="/MyAccount/Holds?tab=interlibrary_loan" id="holdsInterlibraryLoan" title="View Interlibrary Loan Requests">
-												{translate text="Interlibrary Loan Requests" isPublicFacing=true} {if empty($offline)}<span class="badge"><span class="interlibrary-loan-requests-placeholder">??</span></span>{/if}
+												 {translate text="Interlibrary Loan Requests" isPublicFacing=true} {if empty($offline)}<span class="badge"><span class="interlibrary-loan-requests-placeholder">??</span></span> <span class="interlibrary-loan-requests-available-holds" style="display: none"> <span class="label label-success"><span class="interlibrary-loan-requests-holds-placeholder"></span> {translate text="Available Now" isPublicFacing=true}</span></span>{/if}
 											</a>
 										</li>
 									{/if}
