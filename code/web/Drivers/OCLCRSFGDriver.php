@@ -214,7 +214,7 @@ class OCLCRSFGDriver {
 				'isPublicFacing' => true,
 			]),
 			'message' => translate([
-				'text' => "Your request has been submitted. You can check the status of your request within your account.",
+				'text' => "Your request has been submitted. You can check the status of your request within your account under Titles On Hold. Please allow for a few minutes before refreshing the page to see your new interlibrary loan request.",
 				'isPublicFacing' => true,
 			]),
 			'success' => true,
@@ -284,7 +284,7 @@ class OCLCRSFGDriver {
 		$requestInAspenDb->mediaType = isset($request['illRequest']['item']['mediaType']) ? $request['illRequest']['item']['mediaType'] : ""; 
 		$requestInAspenDb->title = isset($request['illRequest']['item']['title']) ? $request['illRequest']['item']['title'] : ""; 
 		$requestInAspenDb->author = isset($request['illRequest']['item']['author']) ? $request['illRequest']['item']['author'] : ""; 
-		$requestInAspenDb->edition = isset($request['illRequest']['item']['edition']) ? $request['illRequest']['item']['edition'] : ""; 
+		$requestInAspenDb->edition = isset($request['illRequest']['item']['edition']['editionSpecific']) ? $request['illRequest']['item']['editionSpecific'] : ""; 
 		$requestInAspenDb->publisher = isset($request['illRequest']['item']['publisherName']) ? $request['illRequest']['item']['publisherName'] : ""; 
 		$requestInAspenDb->language = isset($request['illRequest']['item']['language']) ? $request['illRequest']['item']['language'] : ""; 
 		$requestInAspenDb->feeAccepted = isset($request['illRequest']) ? $request['illRequest']['feeAccepted'] : ""; 
