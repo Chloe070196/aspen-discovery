@@ -87,6 +87,84 @@
 		{/if}
 	</div>
 
+<script>
+	{literal}
+		document.getElementById('propertyRowborrower_address').style.display = 'none';
+		document.getElementById('propertyRowborrower_address2').style.display = 'none';
+		document.getElementById('propertyRowborrower_city').style.display = 'none';
+		document.getElementById('propertyRowborrower_state').style.display = 'none';
+		document.getElementById('propertyRowborrower_country').style.display = 'none';
+
+		const postCodeField = document.getElementById('borrower_zipcode')
+		postCodeField.addEventListener('input', (e) => {showAddressList()})
+
+		const select = document.createElement('select')
+		select.style.display = 'none'
+
+		const postCodeFieldWrapper = document.getElementById('propertyRowborrower_zipcode');
+		postCodeFieldWrapper.append(select)
+		
+		const displayAddressFields = () => {
+			document.getElementById('propertyRowborrower_address').style.display = 'block';
+			document.getElementById('propertyRowborrower_address2').style.display = 'block';
+			document.getElementById('propertyRowborrower_city').style.display = 'block';
+			document.getElementById('propertyRowborrower_state').style.display = 'block';
+			document.getElementById('propertyRowborrower_country').style.display = 'block';
+		}
+		const getAddresses = (postcode) => {
+			const url = "/post_serve?query=" + postcode
+			return fetch(url).then(data => data.json())
+		}
+		const sanitize = (input) => {
+			input.trim()
+			return input.slice(0, 7)
+		}
+		const setFieldValues = (addressAsJson) => {
+			const address = JSON.parse(addressAsJson)
+			displayAddressFields()
+			document.getElementById('borrower_address').value = address.address_line_1 ;
+			document.getElementById('borrower_address2').value = address.address_line_2;
+			document.getElementById('borrower_city').value = address.town;
+			document.getElementById('borrower_state').value = address.county;
+			document.getElementById('borrower_country').value = address.country;
+			document.getElementById('borrower_zipcode').value = address.postcode;
+		}
+		const showAddressList = () => {
+			const postcode = sanitize(postCodeField.value)
+			if (!/^[a-zA-Z]{1,2}[0-9]{1,2}\s/.test(postcode)) {
+				return
+			}
+			getAddresses(postcode).then(createDropDown)
+		}
+		const createDropDown = (data) => {
+			while(select.firstChild) select.removeChild(select.lastChild);
+			let index = 1
+			addPlaceholderOption()
+			data.results.forEach((address) => {
+				addOption(address, index)
+				index++
+			})
+			select.setAttribute('class', 'form-control')
+			select.setAttribute('style', 'display: block')
+			select.addEventListener('change', (e) => {setFieldValues(e.target.options[e.target.selectedIndex].value)})
+		}
+		const addOption = (address, index) => {
+			const option = document.createElement('option')
+			option.id = 'address_' + index.toString()
+			option.textContent = address.full_address
+			option.value = JSON.stringify(address)
+			select.append(option)
+		}
+		const addPlaceholderOption = () => {
+			const option = document.createElement('option')
+			option.id = 'address_0'
+			option.textContent = 'Please select...'
+			option.value = 'Please select...'
+			select.append(option)
+		}
+	{/literal}
+</script>
+
 {if !empty($captcha)}
 	{literal}
 	<script type="text/javascript">
