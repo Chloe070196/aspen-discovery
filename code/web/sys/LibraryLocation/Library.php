@@ -387,6 +387,9 @@ class Library extends DataObject {
 	public $summonSettingsId;
 	public $showAvailableCoversInSummon;
 
+	//BMJ BP Settings
+	public $bmjBpSettingId;
+
 	//Combined Results (Bento Box)
 	public /** @noinspection PhpUnused */
 		$enableCombinedResults;
@@ -806,6 +809,15 @@ class Library extends DataObject {
 			$summonSettings[$summonSetting->id] = $summonSetting->name;
 		}
 
+		require_once ROOT_DIR . '/sys/BmjBp/BmjBpSetting.php';
+		$bmjBpSetting = new BmjBpSetting();
+		$bmjBpSetting->orderBy('name');
+		$bmjBpSettings = [];
+		$bmjBpSetting->find();
+		$bmjBpSettings[-1] = 'none';
+		while ($bmjBpSetting->fetch()) {
+			$bmjBpSettings[$bmjBpSetting->id] = $bmjBpSetting->name;
+		}
 
 		require_once ROOT_DIR . '/sys/Ebsco/EBSCOhostSetting.php';
 		$ebscohostSetting = new EBSCOhostSearchSetting();
@@ -3906,6 +3918,25 @@ class Library extends DataObject {
 					],
 				],
 			],
+			
+			'bmjBpSection' => [
+				'property' => 'bmjBpSection',
+				'type' => 'section',
+				'label' => 'BMJ Best Practice',
+				'hideInLists' => true,
+				'renderAsHeading' => true,
+				'properties' => [
+					'bmjBpSettingId' => [
+						'property' => 'bmjBpSettingId',
+						'type' => 'enum',
+						'values' => $bmjBpSettings,
+						'label' => 'BMJ Best Practice Settings',
+						'description' => 'Whether or not searching for BMJ Best Practice metadata should be enabled for this library.',
+						'hideInLists' => true,
+						'default' => -1,
+					],
+				],
+			],
 
 
 			'casSection' => [
@@ -4153,6 +4184,9 @@ class Library extends DataObject {
 		}
 		if (!array_key_exists('Summon', $enabledModules)) {
 			unset($structure['summonSection']);
+		}
+		if (!array_key_exists('BMJ Best Practice', $enabledModules)) {
+			unset($structure['bmjBpSection']);
 		}
 		if (!array_key_exists('Genealogy', $enabledModules)) {
 			unset($structure['genealogySection']);
