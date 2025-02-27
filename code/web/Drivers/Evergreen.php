@@ -796,14 +796,14 @@ class Evergreen extends AbstractIlsDriver {
 		}
 		$propertyName = 'email';
 		$propertyValue = $_REQUEST['email'];
-		$success = $this->updatePatronProperty($propertyName, $propertyValue, $patron->ils_password, $authToken);
-		$userMessages['messages'][] = $success ? 'Your email has been updated.' : 'Your email could not be updated. Please contact your library';
-		$userMessages['success'] = $success;
+		$response = $this->updatePatronProperty($propertyName, $propertyValue, $patron->ils_password, $authToken);
+		$userMessages['messages'][] = $response['success'] ? 'Your email has been updated.' : 'Your email could not be updated. Please contact your library';
+		$userMessages['success'] = $response['success'];
 
 		return $userMessages;
 	}
 
-	private function updatePatronProperty($propertyName, $propertyValue, $patronIlsPassword, $authToken): bool {
+	private function updatePatronProperty($propertyName, $propertyValue, $patronIlsPassword, $authToken): array {
 		$evergreenUrl = $this->accountProfile->patronApiUrl . "/osrf-gateway-v1/$propertyName";
 		$headers = [
 			'Content-Type: application/x-www-form-urlencoded',
@@ -823,24 +823,29 @@ class Evergreen extends AbstractIlsDriver {
 		$apiResponse = $this->apiCurlWrapper->curlPostPage($evergreenUrl, $request);
 		ExternalRequestLogEntry::logRequest('evergreen.updatePatronProperty', 'POST', $evergreenUrl, $this->apiCurlWrapper->getHeaders(), $request, $this->apiCurlWrapper->getResponseCode(), $apiResponse, []);
 
+		$responseData = json_decode($apiResponse, true);
+		$response = ['success' => false, 'message' => ['code' => '', 'text' =>  'Evergreen sent an unexpected response']];
+		if (!isset($responseData['payload'])) {
+			return $response;
+		}
+
 		/** It seems the response sent back by the Evergreen API will have a
 		 * status code of 200 even upon failure (eg. if the patron password
 		 * is incorrect.) However, a successful update will always result
 		 * in the "payload" property being set to 1. Check for this instead.
 		*/
-		$responseData = json_decode($apiResponse, true);
-		$success = isset($responseData['payload']) && $responseData['payload'][0] == 1;
-		return $success;
-	}
+		$response['success'] = $responseData['payload'][0] == 1;
 
+		if (!$response['success']) {
+			global $logger;
+			$logger->log('Error updating patron property ' . $propertyName . ': ' .  $responseData['payload'][0]['desc'], Logger::LOG_ERROR);
+			$response['message']['code'] = $responseData['payload'][0]['textcode'];
+			$response['message']['text'] = $responseData['payload'][0]['desc'];
+			return $response;
+		}
 
-	private function isDuplicateUserName($username):bool {
-		global $aspen_db;
-		$condition = "ils_username=" . "'" . $username . "'";
-		$query = "SELECT COUNT(ils_username) FROM user WHERE $condition;";
-		$queryObject = $aspen_db->query($query, PDO::FETCH_ASSOC);
-		$results = $queryObject->fetch();
-		return isset($results["COUNT(ils_username)"]) && $results["COUNT(ils_username)"];
+		$response['message']['text'] = "Patron property update successfull";
+		return $response;
 	}
 
 	public function hasNativeReadingHistory(): bool {
@@ -1163,14 +1168,17 @@ class Evergreen extends AbstractIlsDriver {
 	
 	public function updateEditableUsername(User $patron, string $username): array {
 		$authToken = $this->getAPIAuthToken($patron, true);
-		if ($this->isDuplicateUserName($username)) {
+		$response = $this->updatePatronProperty('username', $username, $patron->ils_password, $authToken);
+		
+		if ($response['success']) {
+			return ['message' => 'Your username has been updated.', 'success' => true];
+		}
+
+		if($response['message']['code'] == 'USERNAME_EXISTS') {
 			$userMessages['message'] = 'This username is already in use. Please choose another username.';
-			$userMessages['success'] = false;
 			return $userMessages;
 		}
-		$success = $this->updatePatronProperty('username', $username, $patron->ils_password, $authToken);
-		$userMessages['message'] = $success ? 'Your username has been updated.' : 'Your username could not be updated. Please contact your library';
-		$userMessages['success'] = $success;
+		$userMessages['message'] = 'Your username could not be updated. Please contact your library';
 		return $userMessages;
 	}
 
