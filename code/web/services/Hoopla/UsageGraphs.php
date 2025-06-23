@@ -5,7 +5,7 @@ require_once ROOT_DIR . '/sys/Hoopla/HooplaRecordUsage.php';
 require_once ROOT_DIR . '/sys/Utils/GraphingUtils.php';
 
 class Hoopla_UsageGraphs extends Admin_AbstractUsageGraphs {
-	function launch() {
+	function launch(): void {
 		$this->launchGraph('Hoopla');
 	}
 
@@ -29,7 +29,7 @@ class Hoopla_UsageGraphs extends Admin_AbstractUsageGraphs {
 		]);
 	}
 
-	private function getAndSetInterfaceDataSeries($stat, $instanceName) {
+	protected function getAndSetInterfaceDataSeries($stat, $instanceName): void {
 		global $interface;
 
 		$dataSeries = [];
@@ -101,7 +101,7 @@ class Hoopla_UsageGraphs extends Admin_AbstractUsageGraphs {
 		$interface->assign('translateColumnLabels', false);
 	}
 
-	private function assignGraphSpecificTitle($stat) {
+	protected function assignGraphSpecificTitle($stat): void {
 		global $interface;
 		$title = $interface->getVariable('graphTitle');
 		switch ($stat) {
