@@ -93,7 +93,10 @@
 			<div class="dashboardCategory col-sm-6">
 				<div class="row">
 					<div class="col-sm-10 col-sm-offset-1">
-						<h2 class="dashboardCategoryLabel">{translate text="Holds" isAdminFacing=true}</h2>
+						<h2 class="dashboardCategoryLabel">{translate text="Holds" isAdminFacing=true}
+							{' '}
+							<a href="/Hoopla/UsageGraphs?stat=holds&instance={$selectedInstance}" title="{translate text="Show Holds Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a>
+						</h2>
 					</div>
 				</div>
 				<div class="row">

@@ -60,7 +60,11 @@ class Hoopla_UsageGraphs extends Admin_AbstractUsageGraphs {
 		}
 
 		// for the graph displaying data retrieved from the website_page_usage table
-		if ($stat == 'recordsUsed' || $stat == 'loans') {
+		if (
+			$stat == 'recordsUsed' ||
+			$stat == 'loans' ||
+			$stat == 'holds'
+		) {
 			$usage = new HooplaRecordUsage();
 			$usage->groupBy('year, month');
 			if (!empty($instanceName)) {
@@ -79,6 +83,10 @@ class Hoopla_UsageGraphs extends Admin_AbstractUsageGraphs {
 				$dataSeries['Loans'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 				$usage->selectAdd('SUM(timesCheckedOut) as totalCheckouts');
 			}
+			if ($stat == 'holds') {
+				$dataSeries['Holds'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
+				$usage->selectAdd('SUM(timesHeld) as totalHolds');
+			}
 
 			$usage->find();
 			while ($usage->fetch()) {
@@ -91,6 +99,10 @@ class Hoopla_UsageGraphs extends Admin_AbstractUsageGraphs {
 				if ($stat == 'loans') {
 					/** @noinspection PhpUndefinedFieldInspection */
 					$dataSeries['Loans']['data'][$curPeriod] = $usage->totalCheckouts;
+				}
+				if ($stat == 'holds') {
+					/** @noinspection PhpUndefinedFieldInspection */
+					$dataSeries['Holds']['data'][$curPeriod] = $usage->totalHolds;
 				}
 			}
 		}
