@@ -1,35 +1,14 @@
 <?php
-require_once ROOT_DIR . '/services/Admin/Admin.php';
+require_once ROOT_DIR . '/services/Admin/AbstractUsageGraphs.php';
 require_once ROOT_DIR . '/sys/WebsiteIndexing/WebsiteIndexSetting.php';
 require_once ROOT_DIR . '/sys/WebsiteIndexing/WebsitePage.php';
 require_once ROOT_DIR . '/sys/WebsiteIndexing/WebPageUsage.php';
 require_once ROOT_DIR . '/sys/WebsiteIndexing/UserWebsiteUsage.php';
 require_once ROOT_DIR . '/sys/Utils/GraphingUtils.php';
 
-class Websites_UsageGraphs extends Admin_Admin {
+class Websites_UsageGraphs extends Admin_AbstractUsageGraphs {
 	function launch() {
-		global $interface;
-		$stat = $_REQUEST['stat'];
-		if (!empty($_REQUEST['instance'])) {
-			$instanceName = $_REQUEST['instance'];
-		} else {
-			$instanceName = '';
-		}
-		$websiteName= $_REQUEST['websiteName'];
-		$title = 'Websites Usage Graph: ' . $websiteName;
-		$interface->assign('graphTitle', $title);
-		$this->assignGraphSpecificTitle($stat);
-
-		$websiteIndexSettingId = $this->getWebsiteIndexSettingIdBy($websiteName);
-		$this->getAndSetInterfaceDataSeries($stat, $instanceName, $websiteIndexSettingId);
-		$interface->assign('websiteName', $websiteName);
-
-		$interface->assign('stat', $stat);
-		$interface->assign('propName', 'exportToCSV');
-		$interface->assign('showCSVExportButton', true);
-		$interface->assign('section', 'Websites');
-		
-		$this->display('../Admin/usage-graph.tpl', $title);
+		$this->launchGraph('Websites');
 	}
 
 	function getBreadcrumbs(): array {
@@ -50,53 +29,6 @@ class Websites_UsageGraphs extends Admin_Admin {
 			'View System Reports',
 			'View Dashboards',
 		]);
-	}
-
-	// note that this will only handle tables with one stat (as is needed for websites usage data)
-	// to see a version that handle multpile stats, see the Admin/UsageGraphs.php implementation
-	public function buildCSV() {
-		global $interface;
-		$stat = $_REQUEST['stat'];
-		if (!empty($_REQUEST['instance'])) {
-			$instanceName = $_REQUEST['instance'];
-		} else {
-			$instanceName = '';
-		}
-
-		$websiteName= $_REQUEST['websiteName'];
-		$websiteIndexSettingId = $this->getWebsiteIndexSettingIdBy($websiteName);
-		$this->getAndSetInterfaceDataSeries($stat, $instanceName, $websiteIndexSettingId);
-		$dataSeries = $interface->getVariable('dataSeries');
-
-		$filename = "WebsitesUsageData_{$stat}.csv";
-		header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");
-		header("Cache-Control: no-store, no-cache, must-revalidate");
-		header("Cache-Control: post-check=0, pre-check=0", false);
-		header("Pragma: no-cache");
-		header('Content-Type: text/csv; charset=utf-8');
-		header("Content-Disposition: attachment;filename={$filename}");
-		$fp = fopen('php://output', 'w');
-
-		// builds the first row of the table in the CSV - column headers: Dates, and the title of the graph
-		fputcsv($fp, ['Dates', $stat]);
-
-		// builds each subsequent data row - aka the column value
-		foreach ($dataSeries as $dataSerie) {
-			$data = $dataSerie['data'];
-			$numRows = count($data);
-			$dates = array_keys($data);
-
-			if( empty($numRows)) {
-				fputcsv($fp, ['no data found!']);
-			}
-			for($i = 0; $i < $numRows; $i++) {
-				$date = $dates[$i];
-				$value = $data[$date];
-				$row = [$date, $value];
-				fputcsv($fp, $row);
-			}
-		}
-		exit();
 	}
 
 	/*
