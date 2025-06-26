@@ -45,12 +45,14 @@ class Websites_UsageGraphs extends Admin_AbstractUsageGraphs {
 		return $websiteIndexSetting->fetch()->id;
 	}
 
-	private function getAndSetInterfaceDataSeries($stat, $instanceName, $websiteIndexSettingId) {
+	protected function getAndSetInterfaceDataSeries(string $stat, string $instanceName): void {
 		global $interface;
 
 		$dataSeries = [];
 		$columnLabels = [];
 		$usage = [];
+
+		$websiteId = $this->getWebsiteIndexSettingIdBy($_REQUEST['subSection']);
 
 		// for the graph displaying data retrieved from the user_website_usage table
 		if ($stat == 'activeUsers') {
@@ -59,7 +61,7 @@ class Websites_UsageGraphs extends Admin_AbstractUsageGraphs {
 			if (!empty($instanceName)) {
 				$userUsage->instance = $instanceName;
 			}
-			$userUsage->whereAdd("websiteId = $websiteIndexSettingId");
+			$userUsage->whereAdd("websiteId = $websiteId");
 			$userUsage->selectAdd();
 			$userUsage->selectAdd('year');
 			$userUsage->selectAdd('month');
@@ -87,7 +89,7 @@ class Websites_UsageGraphs extends Admin_AbstractUsageGraphs {
 				$usage->instance = $instanceName;
 			}
 
-			$usage->whereAdd("websiteId = $websiteIndexSettingId");
+			$usage->whereAdd("websiteId = $websiteId");
 			$usage->selectAdd();
 			$usage->selectAdd('year');
 			$usage->selectAdd('month');
@@ -108,7 +110,7 @@ class Websites_UsageGraphs extends Admin_AbstractUsageGraphs {
 				$columnLabels[] = $curPeriod;
 				if ($stat == 'pagesViewed') {
 					/** @noinspection PhpUndefinedFieldInspection */
-					$dataSeries['Pages Viewed']['data'][$curPeriod] = $usage->numRecordsUsed;
+					$dataSeries['Pages Viewed']['data'][$curPeriod] = $usage->numRecordViewed;
 				}
 				if ($stat == 'pagesVisited') {
 					/** @noinspection PhpUndefinedFieldInspection */
@@ -123,7 +125,7 @@ class Websites_UsageGraphs extends Admin_AbstractUsageGraphs {
 		$interface->assign('translateColumnLabels', false);
 	}
 
-	private function assignGraphSpecificTitle($stat) {
+	protected function assignGraphSpecificTitle($stat): void {
 		global $interface;
 		$title = $interface->getVariable('graphTitle');
 		switch ($stat) {

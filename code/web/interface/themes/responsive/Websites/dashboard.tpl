@@ -12,7 +12,7 @@
 								{' '}
 								<a href="/Websites/PageStats?siteId={$websiteId}"><small>({translate text="Details" isAdminFacing=true})</small></a>
 								{' '}
-								<a href="/Websites/UsageGraphs?stat=pagesViewed{if !empty($websiteName)}&websiteName={$websiteName}{/if}&instance={$selectedInstance}" title="{translate text="Show Pages Viewed Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a>
+								<a href="/Websites/UsageGraphs?stat=pagesViewed&instance={$selectedInstance}&subSection={$websiteName}" title="{translate text="Show Pages Viewed Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a>
 							</h3>
 						</div>
 					</div>
@@ -43,7 +43,7 @@
 								{' '}
 								<a href="/Websites/PageStats?siteId={$websiteId}"><small>({translate text="Details" isAdminFacing=true})</small></a>
 								{' '}
-								<a href="/Websites/UsageGraphs?stat=pagesVisited{if !empty($websiteName)}&websiteName={$websiteName}{/if}&instance={$selectedInstance}" title="{translate text="Show Pages Visited Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a>
+								<a href="/Websites/UsageGraphs?stat=pagesVisited&instance={$selectedInstance}&subSection={$websiteName}" title="{translate text="Show Pages Visited Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a>
 							</h3>
 						</div>
 					</div>
@@ -72,7 +72,7 @@
 						<div class="col-sm-10 col-sm-offset-1">
 							<h3 class="dashboardCategoryLabel">{translate text="Active Users" isAdminFacing=true}
 								{' '}
-								<a href="/Websites/UsageGraphs?stat=activeUsers{if !empty($websiteName)}&websiteName={$websiteName}{/if}&instance={$selectedInstance}" title="{translate text="Show Active Users Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a>
+								<a href="/Websites/UsageGraphs?stat=activeUsers&instance={$selectedInstance}&subSection={$websiteName}" title="{translate text="Show Active Users Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a>
 							</h3>
 						</div>
 					</div>
