@@ -4409,6 +4409,10 @@ class MyAccount_AJAX extends JSON_Action {
 					'isPublicFacing' => true,
 				]);
 			} else {
+				$catalogDriver = $user->getCatalogDriver();
+				$patronId = $user->unique_ils_id;
+				$groupedHolds = $catalogDriver->getPatronHoldGroups($patronId);
+				
 				$selectedUser = $this->setFilterLinkedUser();
 
 				if ($user->getHomeLibrary() != null) {
