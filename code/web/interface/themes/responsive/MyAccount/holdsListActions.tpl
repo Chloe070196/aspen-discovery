@@ -22,6 +22,7 @@
 					{/if}
 					{if $allowHoldsToBeGrouped}
 						<a href="#" onclick="AspenDiscovery.Account.groupHolds('{$source}', $('#unavailableHoldSort_{$source} option:selected').val());" class="btn btn-sm btn-default" aria-description="{translate text="Click here to group selected holds"}">{translate text="Group Selected Holds" isPublicFacing=true}</a>
+						<a href="#" onclick="AspenDiscovery.Account.groupSelectedPendingHolds('{$source}', $('#unavailableHoldSort_{$source} option:selected').val());" class="btn btn-sm btn-default" aria-description="{translate text="Click here to group selected pending holds"}">{translate text="Group Selected Pending Holds" isPublicFacing=true}</a>
 					{/if}
 					{if $allowSelectingHoldsToExport}
 						<a href="#" onclick="return AspenDiscovery.Account.exportOnlySelectedHolds('{$source}', $('#{$sectionKey}HoldSort_{$source} option:selected').val()" class="btn btn-sm btn-default" aria-description="{translate text="Click here to export selected holds in the $sectionLabel section to CSV"}">{translate text="Export Selected $sectionLabel to CSV" isPublicFacing=true}</a>
