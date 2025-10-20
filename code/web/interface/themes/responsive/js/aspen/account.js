@@ -3126,6 +3126,7 @@ AspenDiscovery.Account = (function () {
 		},
 		requestGroupConfirmation: function() {
 			const selectedHolds = [];
+			const userIds = [];
 			
 			$("input.titleSelect:checked").each(function() {
 				const nameAttr = $(this).attr('name');
@@ -3133,8 +3134,14 @@ AspenDiscovery.Account = (function () {
 					const idMatches = nameAttr.match(/\d+/g);
 					if (idMatches && idMatches.length >= 3) {
 						const holdId = idMatches[2];
+						const userId = idMatches[0];
+
 						if (holdId && !selectedHolds.includes(holdId)) {
 							selectedHolds.push(holdId);
+						}
+
+						if (userId && !userIds.includes(userId)) {
+							userIds.push(userId);
 						}
 					}
 				}
@@ -3144,11 +3151,13 @@ AspenDiscovery.Account = (function () {
 				AspenDiscovery.showMessage('No Holds Selected', 'Please select at least one hold to group.');
 				return;
 			}
+			console.log("user ids: ", userIds);
 
 			$.getJSON(Globals.path + "/MyAccount/AJAX?method=groupPatronHolds", {
 				source: 'ils',
 				holdIds: selectedHolds,
-				forceGrouped: false
+				forceGrouped: false,
+				userIds: userIds
 			}, function(data) {
 				if (data.success) {
 					AspenDiscovery.showMessage(data.title, data.message, false, true, false, false);
@@ -3162,13 +3171,14 @@ AspenDiscovery.Account = (function () {
 				AspenDiscovery.ajaxFail(jqXHR, textStatus, errorThrown);
 			});
 		},
-		forceGroupHolds: function(holdIds) {
+		forceGroupHolds: function(holdIds, userIds) {
 			console.log("Force grouping with IDs:", holdIds);
 			
 			$.getJSON(Globals.path + "/MyAccount/AJAX?method=groupPatronHolds", {
 				source: 'ils',
 				holdIds: holdIds,
-				forceGrouped: true
+				forceGrouped: true, 
+				userIds: userIds
 			}, function(data) {
 				if (data.success) {
 					AspenDiscovery.showMessage(data.title, data.message, false, true, false, false);
