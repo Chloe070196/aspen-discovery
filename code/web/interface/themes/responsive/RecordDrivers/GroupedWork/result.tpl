@@ -190,53 +190,27 @@
 								{/if}
 								</div>
 							</div>
-						{/if}
-					{/if}
-
-					{if !empty($showArInfo) && $summArInfo}
-						<div class="result-label col-sm-4 col-xs-12">{translate text='Accelerated Reader' isPublicFacing=true} </div>
-						<div class="result-value col-sm-8 col-xs-12">
-							{$summArInfo}
 						</div>
+					{else}
+						{include file="GroupedWork/metadataBlocks.tpl"}
 					{/if}
-
-					{if !empty($showLexileInfo) && $summLexileInfo}
-						<div class="result-label col-sm-4 col-xs-12">{translate text='Lexile measure' isPublicFacing=true} </div>
-						<div class="result-value col-sm-8 col-xs-12">
-							{$summLexileInfo}
-						</div>
-					{/if}
-
-					{if !empty($showFountasPinnell) && $summFountasPinnell}
-						<div class="result-label col-sm-4 col-xs-12">{translate text='Fountas &amp; Pinnell' isPublicFacing=true} </div>
-						<div class="result-value col-sm-8 col-xs-12">
-							{$summFountasPinnell}
-						</div>
-					{/if}
-
-					{if !empty($showPhysicalDescriptions)}
-						{if $alwaysShowSearchResultsMainDetails || $summPhysicalDesc}
-							<div class="result-label col-sm-4 col-xs-12">{translate text='Physical Desc' isPublicFacing=true} </div>
-							<div class="result-value col-sm-8 col-xs-12">
-								{if !empty($summPhysicalDesc)}
-									{$summPhysicalDesc}
-								{elseif $alwaysShowSearchResultsMainDetails}
-									{translate text="Not Supplied" isPublicFacing=true}
-								{/if}
+					{if $allowHoldsToBeGrouped}
+						<div class="col-xs-12" style="display: flex; flex-wrap: wrap; align-items: flex-start; margin-top:10px;">
+							<div class="metadata-columns" style="display: flex; flex-wrap: wrap; flex:1;">
+								{include file="GroupedWork/metadataBlocks.tpl"}
 							</div>
-						{/if}
+							<div class="metadata-action" style="margin-left:auto; flex-shrink:0;">
+								<a href="#" class="btn btn-primary btn-sm" aria-label="{translate text='Place a hold on this grouped work' isPublicFacing=true}">
+									{translate text="Place Hyperhold" isPublicFacing=true}
+								</a>
+							</div>
+						</div>
+					{else}
+						{include file="GroupedWork/metadataBlocks.tpl"}
 					{/if}
 
-					{if !empty($showLanguages) && $summLanguage}
-						<div class="result-label col-sm-4 col-xs-12">{translate text="Language" isPublicFacing=true} </div>
-						<div class="result-value col-sm-8 col-xs-12">
-							{if is_array($summLanguage)}
-								{implode subject=$summLanguage glue=', ' translate=true isPublicFacing=true isMetadata=true}
-							{else}
-								{translate text=$summLanguage isPublicFacing=true isMetadata=true}
-							{/if}
-						</div>
-					{/if}
+
+
 
 					{include file="GroupedWork/relatedLists.tpl" isSearchResults=true}
 
