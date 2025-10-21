@@ -12099,6 +12099,7 @@ class MyAccount_AJAX extends JSON_Action {
 
 		$holdGroupId = $_REQUEST['holdGroupId'] ?? null;
 		$visualHoldId = $_REQUEST['visualHoldId'] ?? '';
+		$userId = $_REQUEST['userId'] ?? '';
 
 		if (empty($holdGroupId)) {
 			return [
@@ -12119,7 +12120,7 @@ class MyAccount_AJAX extends JSON_Action {
 				'isPublicFacing' => true
 			]),
 			'modalBody' => $interface->fetch('HoldGroups/confirmDeleteHoldGroup.tpl'),
-			'modalButtons' => "<button class='tool btn btn-primary' onclick='AspenDiscovery.Account.confirmDeleteHoldGroup(" . json_encode($holdGroupId) . ", " . json_encode($visualHoldId) . "); return false;'>" .  translate([
+			'modalButtons' => "<button class='tool btn btn-primary' onclick='AspenDiscovery.Account.confirmDeleteHoldGroup(" . json_encode($holdGroupId) . ", " . json_encode($visualHoldId) . ", " . json_encode($userId) . "); return false;'>" .  translate([
 				'text' => "Ungroup Holds",
 				'isPublicFacing' => true,
 			]) . "</button>",
@@ -12129,10 +12130,21 @@ class MyAccount_AJAX extends JSON_Action {
 	public function deleteHoldGroup() {
 		require_once ROOT_DIR . '/sys/User/Hold.php';
 		global $interface;
-		global $logger;
-		$user = UserAccount::getLoggedInUser();
 
 		$holdGroupId = $_REQUEST['holdGroupId'] ?? null;
+		$userId = $_REQUEST['userId'] ?? null;
+		$user = new User();
+		$user->id = $userId;
+
+		if ($user->find(true)) {
+			$patronId = $user->unique_ils_id;
+		} else {
+			return [
+				'success' => false,
+				'title' => translate(['text' => 'Error', 'isPublicFacing' => true]),
+				'message' => translate(['text' => 'User not found', 'isPublicFacing' => true]),
+			];
+		}
 
 		if (empty($holdGroupId)) {
 			return [
@@ -12148,10 +12160,11 @@ class MyAccount_AJAX extends JSON_Action {
 			];
 		}
 
+		
+
 		$catalogDriver = $user->getCatalogDriver();
 		if ($catalogDriver->driver instanceof Koha) {
 			try {
-				$patronId = $user->unique_ils_id;
 				$result = $catalogDriver->deletepatronHoldGroup($patronId, $holdGroupId);
 				if ($result === true) {
 					$holdRecord = new Hold();
