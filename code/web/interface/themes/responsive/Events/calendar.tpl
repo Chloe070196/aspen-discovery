@@ -9,6 +9,17 @@
 	<div class="row">
 		<div class="col-tn-2 col-sm-1 calendar-nav-cell"><a class="btn btn-default" href="" onclick='return AspenDiscovery.Events.getPrintListOptions({if !empty($weekNumber)}{$weekNumber}{else}""{/if}, {if !empty($monthNumber)}{$monthNumber}{else}""{/if}, {$yearNumber})'>{translate text="Print Options" isPublicFacing=true} </a></div>
 	</div>
+	<form method="get" id="locationFilter">
+		<label for="location">Filter by location:</label>
+		<select name="location" id="location" onchange="document.getElementById('locationFilter').submit()">
+			<option value="all"{if $selectedLocation == 'all'} selected{/if}>All Locations</option>
+			{foreach from=$locations key=code item=name}
+				<option value="{$code}"{if $selectedLocation == $code} selected{/if}>{$name}</option>
+			{/foreach}
+		</select>
+		{if isset($month)}<input type="hidden" name="month" value="{$month}">{/if}
+		{if isset($year)}<input type="hidden" name="year" value="{$year}">{/if}
+	</form>
 	<div class="calendar {if $useWeek}week-view{/if}">
 		<div class="row calendar-nav">
 			<div class="calendar-nav-cell col-tn-2 col-sm-1 align"><a class="btn btn-default" href="{$prevLink}" style="position:absolute;left: 0;"><i class="fas fa-caret-left" role="presentation"></i> {translate text="Previous" isPublicFacing=true}</a></div>
@@ -56,6 +67,9 @@
 								<div class="calendar-event" data-event_id="{$event.id}">
 									<div class="calendar-event-title">
 										<a href="{$event.link}" target="_blank" aria-label="{translate text=$event.title isPublicFacing=true inAttribute=true} ({translate text="opens in a new window" isPublicFacing=true inAttribute=true})">{$event.title}</a>
+									</div>
+									<div class="calendar-event-location">
+										{$event.location}
 									</div>
 									<div class="calendar-event-time {if $printEndTime}show-end-time{else}can-hide-end-time{/if}">
 										{$event.formattedTime}
