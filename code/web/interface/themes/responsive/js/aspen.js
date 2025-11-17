@@ -4466,8 +4466,9 @@ AspenDiscovery.Account = (function () {
 			return false;
 		},
 
-		loadEvents: function (page, filter) {
-			var url = Globals.path + "/MyAccount/AJAX?method=getSavedEvents";
+		// can be set to fetch events a user has saved or registered for
+		loadEvents: function (page, filter, $sectionName) {
+			var url = Globals.path + "/MyAccount/AJAX?method=get" + $sectionName + "Events";
 			if (page !== undefined) {
 				url += "&page=" + page;
 			} else {
