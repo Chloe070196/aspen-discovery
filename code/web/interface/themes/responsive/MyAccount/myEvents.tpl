@@ -13,18 +13,8 @@
 					</select>
 				</div>
 			</div>
-			<div class="row">
-				<div class="col-lg-12" id="myEventsPlaceholder">
-					{translate text="Loading Saved Events" isPublicFacing=true}
-				</div>
-				<script type="text/javascript">
-					{literal}
-					$(document).ready(function() {
-						AspenDiscovery.Account.loadEvents({/literal}{$page}, '{$eventsFilter|escape}'{literal});
-					});
-					{/literal}
-				</script>
-			</div>
+			{include file="./myEventsSection.tpl" sectionTitle='Your Saved Events' sectionName='Saved'}
+			{include file="./myEventsSection.tpl" sectionTitle='Events You Registered For' sectionName='Registered'}
 		</div>
 	</div>
 	{else}
