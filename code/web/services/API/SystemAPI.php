@@ -391,8 +391,10 @@ class SystemAPI extends AbstractAPI {
 		$communityEngagementUpdates = getCommunityEngagementUpdates();
 		require_once ROOT_DIR . '/sys/DBMaintenance/talpa_updates.php';
 		$talpaUpdates = getTalpaUpdates();
+		require_once ROOT_DIR . '/sys/DBMaintenance/native_events_registration_updates.php';
+		$nativeEventRegistrationUpdates = getNativeEventRegistrationtUpdates();
 		
-		$baseUpdates = array_merge($library_location_updates, $summonUpdates, $cloudLibraryUpdates, $grapesWebBuilderUpdates, $communityEngagementUpdates, $talpaUpdates, $heycentricUpdates);
+		$baseUpdates = array_merge($library_location_updates, $summonUpdates, $cloudLibraryUpdates, $grapesWebBuilderUpdates, $communityEngagementUpdates, $talpaUpdates, $heycentricUpdates, $nativeEventRegistrationUpdates);
 
 		//Get version updates
 		require_once ROOT_DIR . '/sys/Utils/StringUtils.php';
