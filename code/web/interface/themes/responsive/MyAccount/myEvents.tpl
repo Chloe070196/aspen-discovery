@@ -13,8 +13,8 @@
 					</select>
 				</div>
 			</div>
-			{include file="./myEventsSection.tpl" sectionTitle='Your Saved Events' sectionName='Saved'}
-			{include file="./myEventsSection.tpl" sectionTitle='Events You Registered For' sectionName='Registered'}
+			{include file="../NativeEvents/Section.tpl" sectionTitle='Your Saved Events' sectionName='Saved'}
+			{include file="../NativeEvents/Section.tpl" sectionTitle='Events You Registered For' sectionName='Registered'}
 		</div>
 	</div>
 	{else}

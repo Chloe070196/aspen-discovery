@@ -4502,7 +4502,27 @@ AspenDiscovery.Account = (function () {
 			}).fail(AspenDiscovery.ajaxFail);
 			return false;
 		},
+		registerToEvent: function (eventInstanceId, userId) {
+			if (!Globals.loggedIn) {
+				return;
+			}
+			const url = Globals.path + "/CommunityEngagement/AJAX";
+			const params = {
+				method: 'getCampaignEmailOptInForm',
+				eventInstanceId: eventInstanceId,
+				userId: userId
+			};
 
+			$.getJSON(url, params, function (data) {
+				if(data.success) {
+					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons, true, '', false, false);
+					return;
+				}
+				AspenDiscovery.showMessage(data.title, data.message);
+			}).fail (function (jqXHR, textStatus, errorThrown) {
+				AspenDiscovery.ajaxFail(jqXHR, textStatus, errorThrown);
+			});
+		},
 		showSaveToListForm: function (trigger, source, id) {
 			if (Globals.loggedIn) {
 				AspenDiscovery.loadingMessage();

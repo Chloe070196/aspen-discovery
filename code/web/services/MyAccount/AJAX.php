@@ -4333,6 +4333,79 @@ class MyAccount_AJAX extends JSON_Action {
 		return $result;
 	}
 
+	public function getNativeEventRegistrationForm() {;
+		require_once ROOT_DIR . '/sys/Account/User.php';
+		require_once ROOT_DIR . '/sys/Events/EventInstance.php';
+		global $interface;
+
+		$eventInstanceId = $_GET['campaignId'];
+		$userId = $_GET['userId'];
+
+		if (!$eventInstanceId || !$userId) {
+			return [
+				'success' => false,
+				'title' => translate([
+					'text' => 'Error',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => 'Event or User information is missing.',
+					'isPublicFacing' => true
+				]),
+			];
+		}
+
+		$user = new User();
+		$user->id = $userId;
+		if(!$user->find(true)) {
+			return [
+				'success' => false,
+				'title' => translate([
+					'text' => 'Error',
+					'isPublicFacing' => true
+				]),
+				'message' => translate([
+					'text' => 'User not found',
+					'isPublicFacing' => true
+				])
+			];
+		}
+
+		$eventInstance = new EventInstance();
+		$eventInstance->id = $eventInstanceId;
+		if (!$eventInstance->find(true)) {
+			return [
+				'success' => false,
+				'title' => translate([
+					'text' => 'Error',
+					'isPublicFacing' => true
+				]),
+				'message' => translate([
+					'text' => 'Event Instance not found',
+					'isPublicFacing' => true
+				])
+			];
+		}
+
+		$interface->assign('eventInstanceId', $eventInstanceId);
+		$interface->assign('userId', $userId);
+		$interface->assign('user', $user);
+		$interface->assign('eventInstanceName', $eventInstanceName ?? '');
+
+		return [
+			'success' => true,
+			'title' => translate([
+				'text' => 'Campaign Notification Options',
+				'isPublicFacing' => true
+			]),
+			'modalBody' => $interface->fetch('NativeEvents/RegistrationForm.tpl'),
+			'modalButtons' => "<button type='button' class='tool btn btn-primary' onclick='AspenDiscovery.Account.handleEventRegistration($eventInstanceId, $userId)'>" . translate([
+				'text' => 'Submit',
+				'isPublicFacing' => true,
+				]) . "</button>",
+		];
+	}
+
 	public function getReadingHistory() {
 		global $interface;
 		$showCovers = $this->setShowCovers();
