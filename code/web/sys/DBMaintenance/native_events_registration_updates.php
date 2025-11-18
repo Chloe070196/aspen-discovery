@@ -2,11 +2,11 @@
 
 function getNativeEventRegistrationtUpdates() {
 	return [
-		'create_user_test_native_event_registration_table' => [
-			'title' => 'Create TEST The User Native Event Registration Table',
-			'description' => 'Adds the ability to save registration to native events',
+		'create_user_native_event_instance_registration_table' => [
+			'title' => 'Create The User Native Event Instance Registration Table',
+			'description' => 'Adds the ability to save registration to native a native event instance',
 			'sql' => [
-				"CREATE TABLE IF NOT EXISTS user_native_event_registration (
+				"CREATE TABLE IF NOT EXISTS user_native_event_instance_registration (
 					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
 					userId INT NOT NULL,
 					eventInstanceId INT NOT NULL,
@@ -15,6 +15,6 @@ function getNativeEventRegistrationtUpdates() {
 					cancelled TINYINT(1) DEFAULT NULL
 				)ENGINE = InnoDB",
 			],
-		], // create_user_native_event_registration_table
+		], // create_user_native_event_instance_registration_table
 	];
 }
