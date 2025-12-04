@@ -192,6 +192,28 @@ class Pay360_Client  {
 		return false;
 	}
 
+	function sendEmail(string $templateName, array $parameters = []) : void {
+		$emailTemplate = EmailTemplate::getActiveTemplate($templateName);
+		if (!$emailTemplate) {
+			return;
+		}
+		$user = UserAccount::getLoggedInUser();
+		if (empty($user) || !$user->email) {
+			return;
+		}
+
+		$fineLines = "";
+		foreach( $this->selectedFines as $fine) {	
+			// TODO: if not using Koha as the ILS, pass what details we can from $fine
+			$fineDetails = $this->catalogDriver->hasAdditionalFineFields() ? $this->catalogDriver->getFineById($fine['id'], true) : [];
+			$fineLines = 'Description: ' . $fine['message'] . "Reference: " . $fineDetails['reason'] . 'Price' . $fineDetails['amountVal'] . "\n";
+			// FIXME: improved formatting
+		}
+		$parameters['selectedFines'] = $fineLines;
+
+		$emailTemplate->sendEmail($user->email, $parameters);
+	}
+
 	// API queries
 	private function _getInvokeResponse(): void {
 		if (empty($this->_soapClient) || empty($this->_pay360Settings) || empty($this->payment)) {
