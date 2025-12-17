@@ -24,9 +24,6 @@ $timer = new Timer();
 global $configArray;
 $configArray = readConfig();
 
-global $logger;
-$logger = new Logger();
-
 initDatabase();
 
 $pay360SettingsId = intval($argv[2]) ?? null;
