@@ -87,7 +87,7 @@ class Events_Events extends ObjectEditor {
 	}
 
 	function getInitializationJs(): string {
-		return 'AspenDiscovery.Events.toggleStartEndTimestamp();';
+		return 'AspenDiscovery.Events.toggleStartEndTimestamp(); AspenDiscovery.Events.displayWaitingListEnable(); AspenDiscovery.Events.displayWaitingListNumberOfSeats();';
 	}
 
 	function getBreadcrumbs(): array {
@@ -120,9 +120,5 @@ class Events_Events extends ObjectEditor {
 
 	public function hasMultiStepAddNew() : bool {
 		return false;
-	}
-
-	function getInitializationJs(): string {
-		return 'AspenDiscovery.Events.displayWaitingListEnable();';
 	}
 }
