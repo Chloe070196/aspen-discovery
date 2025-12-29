@@ -8488,7 +8488,6 @@ class MyAccount_AJAX extends JSON_Action {
 		if ($registration->isUserRegisteredForEvent()) {
 			$registration->cancelled = 1;
 			$registration->update();
-
 			$this->processEventWaitingListSeats($eventInstanceId);
 			
 			$result['success'] = true;
@@ -8503,39 +8502,7 @@ class MyAccount_AJAX extends JSON_Action {
 			return $result;
 		}
 
-		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceWaitingList.php';
-		$userWaitingList = new UserAspenEventInstanceWaitingList();
-		$userWaitingList->eventInstanceId = $eventInstanceId;
-		$userWaitingList->userId = $userId;
-		$userWaitingList->whereAdd('status IN ("waiting", "notified")');
-
-		$canRegister = false;
-		$wasInvited = false;
-		$waitingListPosition = null;
-		$waitingListId = null;
-		$inviteExpires = null;
-
-		if ($userWaitingList->find(true)) {
-			$canRegister = ($userWaitingList->canRegister == 1);
-			if ($userWaitingList->status === 'notified') {
-				$now = new DateTimeImmutable();
-				$inviteExpires = DateTimeImmutable::createFromFormat(
-					'Y-m-d H:i:s',
-					$userWaitingList->expiresAt
-				);
-				if ($inviteExpires && $now > $inviteExpires) {
-					$canRegister = false;
-					$userWaitingList->canRegister = 0;
-					$userWaitingList->update();
-				} else {
-					$wasInvited = true;
-					$waitingListPosition = $userWaitingList->position;
-					$waitingListId = $userWaitingList->id;
-				}
-			}
-		}
-
-		if (!$eventInstance->hasAvailableSeats(1) && !$canRegister) {
+		if (!$eventInstance->hasAvailableSeats(1)) {
 			$result['message'] = translate([
 				'text' => 'This event is full. No seats available.',
 				'isPublicFacing' => true
