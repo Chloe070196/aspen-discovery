@@ -226,10 +226,8 @@ class Pay360_Client  {
 
 		$fineLines = "";
 		foreach( $this->selectedFines as $fine) {	
-			// TODO: if not using Koha as the ILS, pass what details we can from $fine
 			$fineDetails = $this->catalogDriver->hasAdditionalFineFields() ? $this->catalogDriver->getFineById($fine['id'], true) : [];
 			$fineLines = 'Description: ' . $fine['message'] . "Reference: " . $fineDetails['reason'] . 'Price' . $fineDetails['amountVal'] . "\n";
-			// FIXME: improved formatting
 		}
 		$parameters['selectedFines'] = $fineLines;
 
@@ -283,7 +281,6 @@ class Pay360_Client  {
 		$items = [];
 		foreach( $this->selectedFines as $fine) {	
 			$fineDetails = $this->catalogDriver->hasAdditionalFineFields() ? $this->catalogDriver->getFineById($fine['id'], true) : [];
-			//BLOCKED - TODO: vatCode, fundCode and reference
 			$vatCode = 'test';
 			$fundCode = 'test';
 			$reference = 'test';
