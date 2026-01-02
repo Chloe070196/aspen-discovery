@@ -53,7 +53,7 @@ function getAspenEventRegistrationUpdates() {
 				'ALTER TABLE event ADD COLUMN waitingList TINYINT(1) DEFAULT 0',
 				'ALTER TABLE event_instance ADD COLUMN waitingList TINYINT(1) DEFAULT NULL',
 			],
-		], // add_waitingList_to_events_and_instance
+		], // add_waitingList_to_events_and_instances
 		'add_waitingListNumberOfSeats_to_events' => [
 			'title' => 'Add waitingListNumberOfSeats to Events',
 			'description' => 'Add waiting list number of seats column to Events and Event Instances',
@@ -62,7 +62,6 @@ function getAspenEventRegistrationUpdates() {
 				'ALTER TABLE event_instance ADD COLUMN waitingListNumberOfSeats TINYINT(1) DEFAULT NULL',
 			],
 		], // add_waitingListNumberOfSeats_to_events
-
 		//jacob - Staff Event Registration
 		'staff_event_registration_permissions' => [
 			'title' => 'Staff Event Registration Permissions',
@@ -92,5 +91,46 @@ function getAspenEventRegistrationUpdates() {
 				"ALTER TABLE user_aspen_event_instance_registrations ADD COLUMN dateRegistered INT DEFAULT NULL",
 			]
 		], //staff_event_registration_tracking
+		'add_fieldUse_to_event_field' => [
+			'title' => 'Add fieldUse to Event Fields',
+			'description' => 'Add an field use column to event fields',
+			'sql' => [
+				'ALTER TABLE event_field ADD COLUMN fieldUse TINYINT(1) DEFAULT 0',
+			],
+		], // add_fieldUse_to_event_field
+		'add_fieldSetUse_to_event_field' => [
+			'title' => 'Add fieldSetUse to Event Field Sets',
+			'description' => 'Add an field use column to event field sets',
+			'sql' => [
+				'ALTER TABLE event_field_set ADD COLUMN fieldSetUse TINYINT(1) DEFAULT 0',
+			],
+		], // add_fieldSetUse_to_event_field
+		'update_event_type_table' => [
+			'title' => 'Update Event Type Table',
+			'description' => 'Update the Event Type table to link to information and/or registration field set ids',
+			'sql' => [
+				'ALTER TABLE event_type RENAME COLUMN eventFieldSetId to eventInformationFieldSetId',
+				'ALTER TABLE event_type ADD COLUMN eventRegistrationFieldSetId TINYINT(1) DEFAULT 0',
+			],
+		], // update_event_type_table
+		'add_staffNotes_to_event_table' => [
+			'title' => 'Add staffNotes to Event Table',
+			'description' => 'Add staff only notes to events',
+			'sql' => [
+				'ALTER TABLE event ADD COLUMN staffNotes longtext DEFAULT NULL',
+			],
+		], // add_staffNotes_to_event_table
+		'add_user_aspen_event_instance_registrations_event_field' => [
+			'title' => 'Add User Events Instance Registration Event Field Table',
+			'description' => 'Stores custom registration fields as tied to event instance registrations to record patron information',
+			'sql' =>  [
+				"CREATE TABLE IF NOT EXISTS user_aspen_event_instance_registrations_event_field (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					eventInstanceRegistrationId INT NOT NULL,
+					eventFieldId INT NOT NULL,
+					value TEXT DEFAULT NULL
+				) ENGINE INNODB CHARACTER SET utf8 COLLATE utf8_general_ci",
+			] 
+		] //add_user_aspen_event_instance_registrations_event_field
 	];
 }
