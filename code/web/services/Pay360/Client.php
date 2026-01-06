@@ -211,6 +211,7 @@ class Pay360_Client  {
 	}
 
 	function sendEmail(string $templateName, array $parameters = []) : void {
+		require_once ROOT_DIR . '/sys/Email/EmailTemplate.php';
 		$emailTemplate = EmailTemplate::getActiveTemplate($templateName);
 		if (!$emailTemplate) {
 			return;
