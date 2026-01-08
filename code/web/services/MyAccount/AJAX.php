@@ -9313,6 +9313,11 @@ class MyAccount_AJAX extends JSON_Action {
 		$userWaitingList->whereAdd('status IN ("waiting", "notified")');
 
 		$canRegister = false;
+		$wasInvited = false;
+		$waitingListPosition = null;
+		$waitingListId = null;
+		$inviteExpires = null;
+
 		if ($userWaitingList->find(true)) {
 			$canRegister = ($userWaitingList->canRegister == 1);
 			if ($userWaitingList->status === 'notified') {
@@ -9321,11 +9326,14 @@ class MyAccount_AJAX extends JSON_Action {
 					'Y-m-d H:i:s',
 					$userWaitingList->expiresAt
 				);
-
-				if($now > $inviteExpires) {
+				if ($inviteExpires && $now > $inviteExpires) {
 					$canRegister = false;
 					$userWaitingList->canRegister = 0;
 					$userWaitingList->update();
+				} else {
+					$wasInvited = true;
+					$waitingListPosition = $userWaitingList->position;
+					$waitingListId = $userWaitingList->id;
 				}
 			}
 		}
@@ -9358,6 +9366,18 @@ class MyAccount_AJAX extends JSON_Action {
 		// register the user (or undo a registration cancellation)
 		$registration->cancelled = 0;
 		$registration->update();
+
+		if ($wasInvited && $waitingListId !== null) {
+			$removeEntry = new userAspenEventInstanceWaitingList();
+			$removeEntry->id = $waitingListId;
+
+			if ($removeEntry->find(true)) {
+				$removedPosition = $removeEntry->position;
+				$removeEntry->delete();
+
+				$this->reorderWaitingListPositions($eventInstanceId, $removedPosition);
+			}
+		}
 
 		$result['success'] = true;
 		$result['title'] = translate([
@@ -12386,6 +12406,20 @@ class MyAccount_AJAX extends JSON_Action {
 		}
 
 		return $dt->format('l jS F Y \a\t H:i');
+	}
+
+	private function reorderWaitingListPositions(int $eventInstanceId, int $removedPosition): void {
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceWaitingList.php';
+
+		$waitingList = new UserAspenEventInstanceWaitingList();
+		$waitingList->eventInstanceId = $eventInstanceId;
+		$waitingList->whereAdd('position > ' . (int)$removedPosition);
+		$waitingList->find();
+
+		while ($waitingList->fetch()) {
+			$waitingList->position = $waitingList->position -1;
+			$waitingList->update();
+		}
 	}
 
 	private function sendWaitingListNotification($userId, $eventInstanceId, $canRegisterUntil): bool {
