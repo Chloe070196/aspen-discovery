@@ -12355,6 +12355,26 @@ class MyAccount_AJAX extends JSON_Action {
 		}
 	}
 
+	private function formatHumanDate(string $date): string {
+		$dt = DateTimeImmutable::createFromFormat('Y-m-d', $date);
+
+		if ($dt === false) {
+			return $date;
+		}
+
+		return $dt->format('l jS F Y');
+	}
+
+	private function formatHumanDateTime(string $dateTime): string {
+		$dt = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $dateTime);
+
+		if ($dt === false) {
+			return $dateTime;
+		}
+
+		return $dt->format('l jS F Y \a\t H:i');
+	}
+
 	private function sendWaitingListNotification($userId, $eventInstanceId, $canRegisterUntil): bool {
 		require_once ROOT_DIR . '/sys/Email/Mailer.php';
 		require_once ROOT_DIR . '/sys/Email/EmailTemplate.php';
@@ -12397,13 +12417,15 @@ class MyAccount_AJAX extends JSON_Action {
 			$logger->log("Unable to find email template", Logger::LOG_ERROR);
 			return false;
 		}
+		$humanEventDate = $this->formatHumanDate($eventInstance->date);
+		$humanRegisterUntilDate = $this->formatHumanDateTime($canRegisterUntil);
 
 		$parameters = [
 			'eventTitle' => $event->title,
-			'eventDate' => $eventInstance->date,
+			'eventDate' => $humanEventDate,
 			'eventTime' => $eventInstance->time,
 			'user' => $user,
-			'canRegisterUntil' => $canRegisterUntil,
+			'canRegisterUntil' => $humanRegisterUntilDate,
 		];
 
 		$emailTemplate->sendEmail($user->email, $parameters);
