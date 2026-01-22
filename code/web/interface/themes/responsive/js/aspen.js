@@ -4478,11 +4478,18 @@ AspenDiscovery.Account = (function () {
 			const userIdField = document.getElementById(`eventRegistrationUserId-${eventSourceId}`);
 			const userId = userSelector ? userSelector.value : (userIdField ? userIdField.value : null);
 
+			const informationForm = document.getElementById(`eventRegistrationForm-${eventSourceId}`);
+			let registrationInformation = [];
+			if (informationForm) {
+				registrationInformation = Object.fromEntries(new FormData(informationForm).entries());
+			}
+			
 			const url = Globals.path + "/MyAccount/AJAX";
 			const params = {
 				method: 'toggleUserRegistrationToEvent',
 				eventInstanceId: eventSourceId.replace(/aspenEvent_\d+_/, ''),
-				userId
+				userId,
+				...registrationInformation,
 			};
 
 			$.getJSON(url, params, function (data) {
