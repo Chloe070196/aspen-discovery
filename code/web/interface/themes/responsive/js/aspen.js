@@ -10786,6 +10786,7 @@ AspenDiscovery.Events = (function(){
 				registrationNumberOfSeats.style.display = '';
 				return;
 			}
+			AspenDiscovery.Events.unsetNumberOfSeats();
 			registrationNumberOfSeats.style.display = 'none';
 		},
 		displayWaitingListEnable: function () {
@@ -10795,6 +10796,7 @@ AspenDiscovery.Events = (function(){
 			if (requireEventRegistration && requireEventRegistration.checked) {
 				waitingListEnabled.style.display = '';
 			} else {
+				AspenDiscovery.Events.unsetWaitingListEnable();
 				waitingListEnabled.style.display = 'none';
 			}
 		},
@@ -10805,10 +10807,32 @@ AspenDiscovery.Events = (function(){
 			if (waitingList && waitingList.checked) {
 				waitingListNumberOfSeats.style.display = '';
 			} else {
+				AspenDiscovery.Events.unsetWaitingListNumberOfSeats();
 				waitingListNumberOfSeats.style.display = 'none';
 			}
 		},
-
+		unsetNumberOfSeats: function () {
+			let numberofSeats = document.getElementById('numberOfSeats');
+			if (!numberofSeats) {
+				return;
+			}
+			numberofSeats.value = null;
+		},
+		unsetWaitingListEnable: function () {
+			let waitingList = document.getElementById('waitingList');
+			if (!waitingList) {
+				return;
+			}
+			waitingList.value = null;
+			waitingList.checked = null;
+		},
+		unsetWaitingListNumberOfSeats: function () {
+			let waitingListNumberOfSeats = document.getElementById('waitingListNumberOfSeats');
+			if (!waitingListNumberOfSeats) {
+				return;
+			}
+			waitingListNumberOfSeats.value = null;
+		},
 		showStaffRegistrationModal: function(eventInstanceId) {
 			var url = Globals.path + "/Events/AJAX";
 			var params = {
