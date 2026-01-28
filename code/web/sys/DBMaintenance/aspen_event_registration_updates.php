@@ -131,6 +131,14 @@ function getAspenEventRegistrationUpdates() {
 					value TEXT DEFAULT NULL
 				) ENGINE INNODB CHARACTER SET utf8 COLLATE utf8_general_ci",
 			] 
-		] //add_user_aspen_event_instance_registrations_event_field
+		], //add_user_aspen_event_instance_registrations_event_field
+		'alter_column_type_for_event_number_of_seats' => [
+			'title' => 'Alter Column Type For Event Number of Seats',
+			'description' => 'Alter the column type for the number of seats an event can have',
+			'sql' => [
+				'ALTER TABLE event MODIFY numberOfSeats SMALLINT UNSIGNED DEFAULT NULL',
+				'ALTER TABLE event_instance MODIFY numberOfSeats SMALLINT UNSIGNED DEFAULT NULL',
+			],
+		], //alter_column_type_for_event_number_of_seats
 	];
 }
