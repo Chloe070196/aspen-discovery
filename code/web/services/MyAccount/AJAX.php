@@ -8121,22 +8121,68 @@ class MyAccount_AJAX extends JSON_Action {
 			}
 
 			$user = UserAccount::getLoggedInUser();
-			if ($user) {
-				$interface->assign('loggedIn', true);
-				$interface->assign('userId', $user->id);
-				$interface->assign('userDisplayName', $user->getDisplayName());
-				$interface->assign('userEmail', $user->email);
-				$interface->assign('userHomeLocation', $user->getHomeLocationName());
+			if (empty($user)) {
+				$interface->assign('loggedIn', false);
+				$result['buttons'] =  $interface->fetch('AspenEvents/registrationToggleButton.tpl');
+				$catalog = CatalogFactory::getCatalogConnectionInstance();
 
-				$linkedUsers = [];
-				if ($library->allowLinkedAccounts) {
-					$linkedUsers = $user->getLinkedUsers();
-					foreach ($linkedUsers as $linkedUser) {
-						$linkedUser->loadContactInformation();
-					}
+				if (!$catalog->hasMandatorySelfRegistrationFields()) {
+					return $result;
 				}
-				$interface->assign('linkedUsers', $linkedUsers);
+
+				if ($library->enableSelfRegistration == 0) {
+					$this->display('selfRegistrationNotAllowed.tpl', 'Register for a Library Card', '');
+					return $result;
+				}
+
+				if ($library->enableSelfRegistration == 1) {
+					$result['title'] = translate([
+						'text' => 'Join our library to register for events',
+						'isPublicFacing' => true,
+					]);
+					$result['success'] = true;
+					$selfRegFields = $catalog->getMandatorySelfRegistrationFormStructure();
+
+					$interface->assign('submitUrl', '/MyAccount/SelfReg');
+					$interface->assign('saveButtonText', 'Register');
+					$interface->assign('isSelfRegistration', true);
+					$interface->assign('formLabel', 'Self Registration');
+					$interface->assign('structure', $selfRegFields);
+					$fieldsForm = $interface->fetch('DataObjectUtil/objectEditForm.tpl');
+					$interface->assign('minimalSelfRegForm', $fieldsForm);
+					$body .= $interface->fetch('AspenEvents/registrationModalContents.tpl');
+					$result['body'] = $body;
+					return $result;
+				}
+				
+				if ($library->enableSelfRegistration == 2) {
+					$result['title'] = translate([
+						'text' => 'Join our library to register for events',
+						'isPublicFacing' => true,
+					]);
+					if (!empty($library->selfRegistrationUrl)) {
+						header("Location: {$library->selfRegistrationUrl}");
+						exit;
+					}
+					$this->display('selfRegistrationNotAllowed.tpl', 'Register for a Library Card', '');
+					$result['success'] = true;
+					return $result;
+				}
 			}
+
+			$interface->assign('loggedIn', true);
+			$interface->assign('userId', $user->id);
+			$interface->assign('userDisplayName', $user->getDisplayName());
+			$interface->assign('userEmail', $user->email);
+			$interface->assign('userHomeLocation', $user->getHomeLocationName());
+			$linkedUsers = [];
+			if ($library->allowLinkedAccounts) {
+				$linkedUsers = $user->getLinkedUsers();
+				foreach ($linkedUsers as $linkedUser) {
+					$linkedUser->loadContactInformation();
+				}
+			}
+			$interface->assign('linkedUsers', $linkedUsers);
 
 			require_once ROOT_DIR . '/RecordDrivers/AspenEventRecordDriver.php';
 			$sourceId = 'aspenEvent_' . $aspenEventSettings->id . '_' . $eventInstanceId;
@@ -8150,7 +8196,6 @@ class MyAccount_AJAX extends JSON_Action {
 			$interface->assign('registrationFormStructure', $registrationFormStructure);
 				
 			$body .= $interface->fetch('AspenEvents/registrationModalContents.tpl');
-			$result['buttons'] =  $interface->fetch('AspenEvents/registrationToggleButton.tpl');
 			$result['success'] = true;
 			$result['body'] = $body;	
 			return $result;
