@@ -17,9 +17,15 @@
 				{/if}
 			</div>
 			{if $showRenewalLink}
-				<div class="text-center">
-					<a class="btn btn-info btn-sm" href="{$cardRenewalLink}">{translate text="Renew your card" isPublicFacing=true}</a>
-				</div>
+				{if $useILSCardRenewalFlow} 
+					<div class="text-center">
+						<a class="btn btn-info btn-sm" onclick="return AspenDiscovery.Account.displayCardRenewalModal()">{translate text="Renew your card" isPublicFacing=true}</a>
+					</div>
+				{else}
+					<div class="text-center">
+						<a class="btn btn-info btn-sm" href="{$cardRenewalLink}">{translate text="Renew your card" isPublicFacing=true}</a>
+					</div>
+				{/if}
 			{/if}
 		</div>
 		<hr class="menu">
