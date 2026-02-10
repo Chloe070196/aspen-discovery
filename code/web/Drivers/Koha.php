@@ -9314,6 +9314,10 @@ class Koha extends AbstractIlsDriver {
 		return true;
 	}
 
+	public function hasCardRenewalSupport(): bool {
+		return true;
+	}
+
 	private function getAccountLineDescription($accountline): string {
 		if ($accountline['description']) {
 			return $accountline['description'];
