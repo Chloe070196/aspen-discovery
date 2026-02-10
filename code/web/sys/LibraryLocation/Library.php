@@ -1083,7 +1083,7 @@ class Library extends DataObject {
 
 		$validCardRenewalOptions = [
 			0 => 'No Card Renewal',
-			//1 => 'ILS Based Card Renewal',
+			1 => 'ILS Based Card Renewal',
 			2 => 'Redirect to Card Renewal URL',
 		];
 		require_once ROOT_DIR . '/sys/Enrichment/QuipuECardSetting.php';
