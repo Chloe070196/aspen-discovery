@@ -3144,5 +3144,20 @@ AspenDiscovery.Account = (function () {
 			}).fail(AspenDiscovery.ajaxFail);
 			return false;
 		},
+		displayCardRenewalModal: function() {
+			var url = Globals.path + "/MyAccount/AJAX";
+			var params = {
+				'method': 'cardRenewalModal',
+			};
+			// noinspection JSUnresolvedFunction
+			$.getJSON(url, params, function (data) {
+				if (data.success) {
+					AspenDiscovery.showMessageWithButtons(data.title, data.body, data.buttons, false);
+				} else {
+					AspenDiscovery.showMessage("Error", data.message);
+				}
+			}).fail(AspenDiscovery.ajaxFail);
+			return false;
+		}
 	};
 }(AspenDiscovery.Account || {}));
