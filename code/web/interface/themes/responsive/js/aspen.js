@@ -9245,6 +9245,21 @@ AspenDiscovery.Account = (function () {
 			}).fail(AspenDiscovery.ajaxFail);
 			return false;
 		},
+		displayCardRenewalModal: function() {
+			var url = Globals.path + "/MyAccount/AJAX";
+			var params = {
+				'method': 'cardRenewalModal',
+			};
+			// noinspection JSUnresolvedFunction
+			$.getJSON(url, params, function (data) {
+				if (data.success) {
+					AspenDiscovery.showMessageWithButtons(data.title, data.body, data.buttons, false);
+				} else {
+					AspenDiscovery.showMessage("Error", data.message);
+				}
+			}).fail(AspenDiscovery.ajaxFail);
+			return false;
+		}
 	};
 }(AspenDiscovery.Account || {}));
 AspenDiscovery.Admin = (function () {
@@ -17358,6 +17373,33 @@ AspenDiscovery.OverDrive = (function(){
 				}
 			);
 			return false;
+		},
+
+		checkAutoAction() {
+			const urlParams = new URLSearchParams(window.location.search);
+			const autoAction = urlParams.get('autoAction');
+			const autoRecordId = urlParams.get('autoRecordId');
+
+			if (autoAction && autoRecordId) {
+				// Remove parameters from URL to prevent re-triggering on refresh.
+				const cleanUrl = window.location.pathname + window.location.search
+					.replace(/[?&]autoAction=[^&]*/g, '')
+					.replace(/[?&]autoRecordId=[^&]*/g, '')
+					.replace(/^\?&/, '?')
+					.replace(/^&/, '?')
+					.replace(/\?$/, '');
+				if (window.history?.replaceState) {
+					window.history.replaceState({}, '', cleanUrl);
+				}
+
+				setTimeout(() => {
+					if (autoAction === 'checkout') {
+						AspenDiscovery.OverDrive.checkOutTitle(autoRecordId, null);
+					} else if (autoAction === 'hold') {
+						AspenDiscovery.OverDrive.placeHold(autoRecordId, null);
+					}
+				}, 500); // Small delay to ensure page is fully loaded.
+			}
 		}
 	}
 }(AspenDiscovery.OverDrive || {}));
@@ -22351,3 +22393,11 @@ AspenDiscovery.FormFields = (function() {
 		initializeCharacterCounters: initializeCharacterCounters
 	};
 }());
+AspenDiscovery.Gale = (function () {
+	return {
+		trackGaleUsage: function (id) {
+			var ajaxUrl = Globals.path + "/Gale/JSON?method=trackGaleUsage&id=" + id;
+			$.getJSON(ajaxUrl);
+		}
+	}
+}(AspenDiscovery.Gale || {}));
