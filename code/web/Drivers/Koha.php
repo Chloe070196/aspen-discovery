@@ -7388,7 +7388,7 @@ class Koha extends AbstractIlsDriver {
 	function setExtendedAttributes() {
 		$this->initDatabaseConnection();
 		/** @noinspection SqlResolve */
-		$borrowerAttributeTypesSQL = "SELECT * FROM borrower_attribute_types where opac_display = '1' AND opac_editable = '1' order by code";
+		$borrowerAttributeTypesSQL = "SELECT * FROM borrower_attribute_types where opac_display = '1' AND opac_editable = '1' AND self_renewal_verification_check != '1' group by code";
 		$borrowerAttributeTypesRS = mysqli_query($this->dbConnection, $borrowerAttributeTypesSQL);
 		$extendedAttributes = [];
 
