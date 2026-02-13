@@ -12590,8 +12590,15 @@ class MyAccount_AJAX extends JSON_Action {
 
 		$interval = 10;
 		$sentThisSession = [];
+		// $startTime = time();
+		// $maxRuntime = 300;
 
 		while (true) {
+
+			// if ((time() - $startTime) > $maxRuntime) {
+			// 	$logger->log("SSE Max runtime reached for user: " . $patron->id, Logger::LOG_ERROR);
+			// 	exit();
+			// }
 
 			// Stop if client disconnects
 			if (connection_status() != CONNECTION_NORMAL || connection_aborted()) {
