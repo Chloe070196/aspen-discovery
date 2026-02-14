@@ -1048,4 +1048,43 @@ class UserAccount {
 		}
 		return false;
 	}
+
+	/**
+	 * Stores data (upsert) in the user's session-based workflow cache.
+	 *
+	 * @param string $key The key for the cached data.
+	 * @param mixed $value The data to cache.
+	 */
+	public static function setStepperWorkflowCache(string $key, mixed $value): void {
+		$userId = self::getActiveUserId();
+		if (!empty($userId)) {
+			return;
+		}
+		$_SESSION['stepperWorkflowCache'][$userId][$key] = $value;
+	}
+
+	/**
+	 * Retrieves data from the user's session-based workflow cache.
+	 *
+	 * @param string $key The key for the cached data.
+	 * @return mixed|null The cached data, or null if not found.
+	 */
+	public static function getStepperWorkflowCache(string $key): mixed {
+		$userId = self::getActiveUserId();
+		if (empty($userId) || !isset($_SESSION['stepperWorkflowCache'][$userId])) {
+			return null;
+		}
+		return $_SESSION['stepperWorkflowCache'][$userId][$key];
+	}
+
+	/**
+	 * Clears the entire session-based workflow cache for the active user.
+	 */
+	public static function clearStepperWorkflowCache(): void {
+		$userId = self::getActiveUserId();
+		if (empty($userId) || !isset($_SESSION['stepperWorkflowCache'][$userId])) {
+			return;
+		}
+		unset($_SESSION['stepperWorkflowCache'][$userId]);
+	}
 }
