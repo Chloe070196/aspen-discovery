@@ -7385,6 +7385,20 @@ class Koha extends AbstractIlsDriver {
 		}
 	}
 
+	/**
+	 * Calls getAccountRenewalInformationForPatron to query the account renewal endpoint and check whether the patron can renew.
+	 * @param string $uniqueIldId: stored under unique_ils_id on User objects, matches a Koha borrowernumber.
+	 * @access public
+	 */
+	public function canRenewCard(string $uniqueIlsId): bool {
+		if (!UserAccount::isLoggedIn()) {
+			return false;
+		}
+		$response = $this->getAccountRenewalInformationForPatron($uniqueIlsId);
+		return $response['success'] == true;
+	}
+
+
 	private function getAccountRenewalInformationForPatron(string $userId): array {
 		$result = ['success' => false];
 
