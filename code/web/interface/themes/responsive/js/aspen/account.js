@@ -3153,9 +3153,9 @@ AspenDiscovery.Account = (function () {
 			$.getJSON(url, params, function (data) {
 				if (data.success) {
 					AspenDiscovery.showMessageWithButtons(data.title, data.body, data.buttons, false);
-				} else {
-					AspenDiscovery.showMessage("Error", data.message);
+					return;
 				}
+				AspenDiscovery.showMessage("Error", data.message);
 			}).fail(AspenDiscovery.ajaxFail);
 			return false;
 		}

@@ -7398,6 +7398,76 @@ class Koha extends AbstractIlsDriver {
 		return $response['success'] == true;
 	}
 
+	/**
+	 * Calls getAccountRenewalInformationForPatron to query the account renewal endpoint and obtain verification steps.
+	 * @param string $uniqueIldId: stored under unique_ils_id on User objects, matches a Koha borrowernumber.
+	 * Returns an array of Step objects.
+	 * @access public
+	 */
+	public function getActiveIlsUserAccountRenewalInformation(): array {
+		if (!UserAccount::isLoggedIn()) {
+			return [];
+		}
+
+		$user = UserAccount::getActiveUserObj();
+
+		if (!isset($user->unique_ils_id)) {
+			return ['success' => false];
+		}
+
+		$response = $this->getAccountRenewalInformationForPatron($user->unique_ils_id);
+		if ($response['success'] == false) {
+			return [];
+		}
+
+		return $response['data'];
+	}
+
+	function postAccountRenewal() {
+		$patronId = UserAccount::getActiveUserId();
+		$endpoint = '/api/v1/public/patrons/' . $patronId . '/self_renewal';
+		$extraHeaders = [
+			'Accept-Encoding: gzip, deflate',
+			'Content-Type: application/json'
+		];
+
+		//TODO: add params
+		$requestParameters = []; 
+
+		$response = $this->kohaApiUserAgent->post($endpoint, $requestParameters, 'koha.postAccountRenewal', [], $extraHeaders);
+
+		if ($response && $response['code'] == 200) {
+			return [
+				'success' => true,
+				'data' => $response['content'],
+			];
+		}
+
+		global $logger;
+		$logger->log("Failed to post account renewal. Response code: " . ($response['code'] ?? 'unknown'), Logger::LOG_ERROR);
+
+		if (!empty($response['content']['error'])) {
+			return [
+				'success' => false,
+				'message' => translate([
+					'text' => $response['content']['error'],
+					'isPublicFacing' => true,
+				]),
+			];
+		}
+
+		return [
+			'success' => false,
+			'message' => translate([
+				'text' => 'Unspecified error posting account renewal information to Koha.',
+				'isPublicFacing' => true,
+			]),
+		];
+	}
+
+	function handleAccountRenewalOutcome() {
+		
+	}
 
 	private function getAccountRenewalInformationForPatron(string $userId): array {
 		$result = ['success' => false];

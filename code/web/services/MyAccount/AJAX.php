@@ -2927,10 +2927,14 @@ class MyAccount_AJAX extends JSON_Action {
 				}
 
 				$showRenewalLink = $user->showRenewalLink($ilsSummary);
-				$interface->assign('showRenewalLink', $showRenewalLink);
-				if ($showRenewalLink) {
+				$interface->assign('showRenewalLink', true);
+				// if ($showRenewalLink) {
 					$userLibrary = $user->getHomeLibrary();
 					if ($userLibrary->enableCardRenewal == 1) {
+						$catalog = CatalogFactory::getCatalogConnectionInstance();
+						
+						// global $logger;
+						// $logger->log($checks, Logger::LOG_ERROR);
 						$interface->assign('useILSCardRenewalFlow', true);
 					} elseif ($userLibrary->enableCardRenewal == 2) {
 						if (!empty($userLibrary->cardRenewalUrl)) {
@@ -2945,7 +2949,7 @@ class MyAccount_AJAX extends JSON_Action {
 						}
 						$interface->assign('useILSCardRenewalFlow', false);
 					}
-				}
+				// }
 
 				$ilsSummary->setExpirationNotice($interface->fetch('MyAccount/expirationNotice.tpl'));
 				$ilsSummary->setFinesBadge($interface->fetch('MyAccount/finesBadge.tpl'));
@@ -11842,13 +11846,34 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 	
 	function cardRenewalModal(): array {
+		// Fetch relevant ILS configuration information and cache it for the duration of the stepper flow
+		require_once ROOT_DIR . '/services/Stepper/Stepper.php';
+		$catalogDriver = CatalogFactory::getCatalogConnectionInstance();
+		$data = $catalogDriver->getActiveIlsUserAccountRenewalInformation();
+
+
+		$userId = UserAccount::getActiveUserId();
+		// FIXME: decide whether $instanceId is needed
+		// $instanceId = bin2hex(random_bytes(8));
+		// $key = 'cardRenewal_' . ($userId) . '_' . $instanceId;
+		$key = 'cardRenewal_' . ($userId);
+		UserAccount::setStepperWorkflowCache($key, $data);
+
+		global $interface;
+		$interface->assign('cacheKey', $key);
+
+		global $logger;
+		$logger->log($data, Logger::LOG_ERROR);
+		$logger->log(UserAccount::getStepperWorkflowCache($key), Logger::LOG_ERROR);
+		// $stepper = new Stepper('Card Renewal', $stepList);
+
 		return [
 			'success' => true,
 			'title' => translate([
 				'text' => 'Card Renewal Request',
 				'isPublicFacing' => true,
 			]),
-			'body' => [],
+			'body' => [$interface->display('Stepper/stepper.tpl')],
 			'buttons' => '<a class="btn btn-primary" target="_blank" aria-label="' . translate([
 					'text' => 'Are you sure you want to renew your account?',
 					'isPublicFacing' => true,
