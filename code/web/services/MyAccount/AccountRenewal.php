@@ -121,6 +121,80 @@ class MyAccount_AccountRenewal extends MyAccount {
 		$this->display('accountRenewal.tpl', 'Renew Your Account');
 	}
 
+	
+	protected function setVerificationStep(): array {
+		$data = [];
+		return $data;
+	}
+
+	/**
+	 * Prepares contact information data for display and update.
+	 *
+	 * @return array An associative array of data suitable for templating.
+	 */
+	protected function getContactInformationData(): array {
+		$data = [];
+
+		$user = UserAccount::getLoggedInUser();
+		// Ensure user's contact information is loaded
+		$user->loadContactInformation();
+		$data['profile'] = $user;
+
+		// Get Library Settings from the home library of the current user-account
+		$patronHomeLibrary = $user->getHomeLibrary(true);
+
+
+		$canUpdateContactInfo = false;
+		$canUpdateAddress = false;
+		$canUpdatePhoneNumber = false;
+		$canUpdateWorkPhoneNumber = false;
+		$showWorkPhoneInProfile = false;
+		$showCellphoneInProfile = false;
+		$showNoticeTypeInProfile = false;
+		$allowPinReset = false;
+		$showAlternateLibraryOptionsInProfile = false;
+		$allowAccountLinking = true; // Default to true unless explicitly restricted
+		$passwordLabel = 'Library Card Number'; // Default label
+
+		if ($patronHomeLibrary != null) {
+			$canUpdateContactInfo = ($patronHomeLibrary->allowProfileUpdates == 1);
+			$canUpdateAddress = ($patronHomeLibrary->allowPatronAddressUpdates == 1);
+			$canUpdatePhoneNumber = ($patronHomeLibrary->allowPatronPhoneNumberUpdates == 1);
+			$showWorkPhoneInProfile = ($patronHomeLibrary->showWorkPhoneInProfile == 1);
+			$showCellphoneInProfile = ($patronHomeLibrary->showCellphoneInProfile == 1);
+			$canUpdateWorkPhoneNumber = ($patronHomeLibrary->allowPatronWorkPhoneNumberUpdates == 1);
+			$showNoticeTypeInProfile = ($patronHomeLibrary->showNoticeTypeInProfile == 1);
+			$allowPinReset = ($patronHomeLibrary->allowPinReset == 1);
+			$showAlternateLibraryOptionsInProfile = ($patronHomeLibrary->showAlternateLibraryOptionsInProfile == 1);
+			$allowAccountLinking = ($patronHomeLibrary->allowLinkedAccounts == 1);
+			$passwordLabel = str_replace('Your', '', $patronHomeLibrary->loginFormPasswordLabel ? $patronHomeLibrary->loginFormPasswordLabel : 'Library Card Number');
+
+			// Check for fine restrictions on updates
+			if (($user->_finesVal > $patronHomeLibrary->maxFinesToAllowAccountUpdates) && ($patronHomeLibrary->maxFinesToAllowAccountUpdates > 0)) {
+				$canUpdateContactInfo = false;
+				$canUpdateAddress = false;
+			}
+		}
+
+		$data['canUpdateContactInfo'] = $canUpdateContactInfo;
+		$data['canUpdateAddress'] = $canUpdateAddress;
+		$data['canUpdatePhoneNumber'] = $canUpdatePhoneNumber;
+		$data['canUpdateWorkPhoneNumber'] = $canUpdateWorkPhoneNumber;
+		$data['showWorkPhoneInProfile'] = $showWorkPhoneInProfile;
+		$data['showCellphoneInProfile'] = $showCellphoneInProfile;
+		$data['showNoticeTypeInProfile'] = $showNoticeTypeInProfile;
+		$data['allowPinReset'] = $allowPinReset;
+		$data['showAlternateLibraryOptions'] = $showAlternateLibraryOptionsInProfile;
+		$data['allowAccountLinking'] = $allowAccountLinking;
+		$data['passwordLabel'] = $passwordLabel;
+		$data['showPreferredNameInProfile'] = $user->showPreferredNameInProfile();
+		$data['allowUpdatesOfPreferredName'] = $user->allowUpdatesOfPreferredName();
+		$data['pickupLocations'] = $user->getValidPickupBranches($user->getAccountProfile()->recordSource);
+
+		return $data;
+	}
+
+
 	/**
 	 * Gets account renewal information from the ILS driver, caching the result in the session.
 	 *
@@ -150,6 +224,3 @@ class MyAccount_AccountRenewal extends MyAccount {
 		return $breadcrumbs;
 	}
 }
-
-
-
