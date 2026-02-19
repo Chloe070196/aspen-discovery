@@ -2,7 +2,7 @@
 	<div class="form-group row">
 		<div class="col-sm-12 text-right">
 			{*Allows users to leave the workflow entirely*}
-			<a href="/MyAccount/Home" class="btn btn-default">
+			<a href="/MyAccount/Home" class="btn {if $currentStep == "done"}btn-default{else}btn-danger{/if}">
 				{if $currentStep == "done"}
 					{translate text="Finish" isPublicFacing=true}
 				{else}
@@ -15,7 +15,7 @@
 			{/if}
 			{*Allows users to move forwards in the flow*}
 			{if $currentStep != "done"}
-				<button type="submit" name="navigation" value="{$nextStep}" class="btn btn-default">
+				<button type="submit" name="navigation" value="{$nextStep}" id="continueButton" class="btn btn-primary" {if $currentStep|contains:"verification_check_"}disabled{/if}>
 					{if $currentStep == "submit"}
 						{translate text="Submit Application" isPublicFacing=true}
 					{else}
