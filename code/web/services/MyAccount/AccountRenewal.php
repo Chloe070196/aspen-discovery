@@ -20,14 +20,103 @@ class MyAccount_AccountRenewal extends MyAccount {
 			return;
 		}
 
-		$previousStep = $interface->getVariable('previousStep') ?? 'back';
-		$currentStep = $interface->getVariable('currentStep') ?? 'start';
-		$nextStep = $interface->getVariable('nextStep') ?? 'verification_1';
+		$sessionKey = 'account_renewal_data_' . $user->id;
+		$renewalInfo = $this->getRenewalInformation($sessionKey, $user->unique_ils_id);
+		
+		$verificationChecks = $renewalInfo['data']['verification_checks'] ?? [];
+		$selfRenewalSettings = $renewalInfo['data']['self_renewal_settings'] ?? [];
+		$totalChecks = count($verificationChecks);
+
+		$requestedStep = $_POST['currentStep'] ?? $_GET['currentStep'] ?? 'start'; // The step requested by the previous page/form
+		$userAgrees = $_POST['userAgrees'] ?? '';
+
+		$validationError = '';
+		$currentWarningMessage = '';
+		$currentStep = 'start'; 
+	
+
+		// Logic to determine what the 'currentStep' should be after processing the request
+		if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+			if ($requestedStep === 'start') {
+				// User clicked 'Continue' from the initial welcome page
+				if ($totalChecks > 0) {
+					$currentStep = 'verification_check_1';
+				} else {
+					$currentStep = 'done'; // No checks, skip directly to done
+				}
+			} elseif (str_starts_with($requestedStep, 'verification_check_')) {
+				$currentCheckIndex = (int)str_replace('verification_check_', '', $requestedStep) - 1;
+
+				if ($userAgrees === 'no') {
+					// User clicked "No" and then "Continue"
+					$currentWarningMessage = 'You chose not to proceed with this verification. Please review the information.';
+					$currentStep = $requestedStep; // Stay on the current verification step
+				} elseif ($userAgrees === 'yes') {
+					// User clicked "Yes" and then "Continue"
+					$nextCheckIndex = $currentCheckIndex + 1;
+					if ($nextCheckIndex < $totalChecks) {
+						$currentStep = 'verification_check_' . ($nextCheckIndex + 1);
+					} else {
+						$currentStep = 'done'; // All checks complete
+					}
+				} else {
+					$validationError = 'Please select Yes or No to proceed.';
+					$currentStep = $requestedStep;
+				}
+			} else {
+				$currentStep = $requestedStep;
+			}
+		} else {
+			$currentStep = $requestedStep;
+		}
+
+		$currentCheckIndex = 0;
+		$currentVerificationCheck = null;
+
+		if (str_starts_with($currentStep, 'verification_check_')) {
+			$currentCheckIndex = (int)str_replace('verification_check_', '', $currentStep) - 1;
+			if ($currentCheckIndex >= 0 && $currentCheckIndex < $totalChecks) {
+				$currentVerificationCheck = $verificationChecks[$currentCheckIndex];
+				$interface->assign('currentVerificationCheck', $currentVerificationCheck);
+			} else {
+				// Invalid index or index out of bounds after some navigation, force to 'done'
+				$currentStep = 'done';
+			}
+		}
+
+		// Determine navigation buttons (nextStep and previousStep)
+		$nextStep = 'done';
+		$previousStep = 'back';
+
+		if ($currentStep === 'start') {
+			if ($totalChecks > 0) {
+				$nextStep = 'verification_check_1';
+			} else {
+				$nextStep = 'done';
+			}
+		} elseif (str_starts_with($currentStep, 'verification_check_')) {
+			$displayIndex = (int)str_replace('verification_check_', '', $currentStep);
+			if (($displayIndex + 1) < $totalChecks) {
+				$nextStep = 'verification_check_' . ($displayIndex + 1);
+			}
+			if ($displayIndex > 0) {
+				$previousStep = 'verification_check_' . ($displayIndex - 1);
+			} else {
+				$previousStep = 'start'; // First verification step, 'Back' goes to 'start'
+			}
+		}
 
 		$interface->assign('previousStep', $previousStep);
 		$interface->assign('currentStep', $currentStep);
 		$interface->assign('nextStep', $nextStep);
+		$interface->assign('selfRenewalSettings', $selfRenewalSettings);
+		$interface->assign('totalVerificationChecks', $totalChecks);
+		$interface->assign('currentCheckIndex', $currentCheckIndex);
 		$interface->assign('ilsUnsupported', false);
+		$interface->assign('confirmContactInformation', false);
+		$interface->assign('validationError', $validationError);
+		$interface->assign('currentWarningMessage', $currentWarningMessage);
+		$interface->assign('userAgrees', $userAgrees);
 
 		$this->display('accountRenewal.tpl', 'Renew Your Account');
 	}
