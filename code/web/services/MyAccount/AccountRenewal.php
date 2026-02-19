@@ -32,6 +32,28 @@ class MyAccount_AccountRenewal extends MyAccount {
 		$this->display('accountRenewal.tpl', 'Renew Your Account');
 	}
 
+	/**
+	 * Gets account renewal information from the ILS driver, caching the result in the session.
+	 *
+	 * @return array The renewal information from the ILS driver.
+	 */
+	protected function getRenewalInformation(string $sessionKey, string $userIlsId): array {
+		if (session_status() == PHP_SESSION_NONE) {
+			session_start();
+		}
+
+		if (isset($_SESSION[$sessionKey])) {
+			return $_SESSION[$sessionKey];
+		}
+
+		$ilsDriver = CatalogFactory::getCatalogConnectionInstance();
+
+		$renewalInfo = $ilsDriver->getAccountRenewalInformationForPatron($userIlsId);
+		$_SESSION[$sessionKey] = $renewalInfo;
+
+		return $renewalInfo;
+	}
+
 	function getBreadcrumbs(): array {
 		$breadcrumbs = [];
 		$breadcrumbs[] = new Breadcrumb('/MyAccount/Home', 'Your Account');

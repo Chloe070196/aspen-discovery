@@ -7399,7 +7399,7 @@ class Koha extends AbstractIlsDriver {
 	}
 
 
-	private function getAccountRenewalInformationForPatron(string $userId): array {
+	public function getAccountRenewalInformationForPatron(string $userId): array {
 		$result = ['success' => false];
 
 		$endpoint = '/api/v1/public/patrons/' . $userId . '/self_renewal';
