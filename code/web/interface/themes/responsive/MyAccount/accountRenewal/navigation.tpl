@@ -2,21 +2,21 @@
 	<div class="form-group row">
 		<div class="col-sm-12 text-right">
 			{*Allows users to leave the workflow entirely*}
-			<a href="/MyAccount/Home" class="btn {if $currentStep == "done"}btn-default{else}btn-danger{/if}">
-				{if $currentStep == "done"}
+			<a href="/MyAccount/Home" class="btn {if $currentStep.name == "done"}btn-default{else}btn-danger{/if}">
+				{if $currentStep.name == "done"}
 					{translate text="Finish" isPublicFacing=true}
 				{else}
 					{translate text="Cancel" isPublicFacing=true}
 				{/if}
 			</a>
 			{*Allows users to move backwards in the flow once started*}
-			{if $currentStep != "start" && $currentStep != "done"}
-				<button type="submit" name="navigation" value="{$previousStep}" class="btn btn-default">{translate text="Back" isPublicFacing=true}</button>
+			{if $currentStep.name != "start" && $currentStep.name != "done"}
+				<button type="submit" name="navigation" value="back" class="btn btn-default">{translate text="Back" isPublicFacing=true}</button>
 			{/if}
 			{*Allows users to move forwards in the flow*}
-			{if $currentStep != "done"}
-				<button type="submit" name="navigation" value="{$nextStep}" id="continueButton" class="btn btn-primary" {if $currentStep|contains:"verification_check_"}disabled{/if}>
-					{if $currentStep == "submit"}
+			{if $currentStep.name != "done"}
+				<button type="submit" name="navigation" value="next" id="continueButton" class="btn btn-primary" {if $currentStep.name|contains:"verification_check_"}disabled{/if}>
+					{if $currentStep.name == "submit"}
 						{translate text="Submit Application" isPublicFacing=true}
 					{else}
 						{translate text="Continue" isPublicFacing=true}
@@ -26,8 +26,6 @@
 		</div>
 	</div>
 
-	{* Hidden fields to manage state. The controller uses these to determine next action. *}
-	<input type="hidden" name="currentStep" value="{$currentStep|escape}">
-	<input type="hidden" name="previousStep" value="{$previousStep|escape}">
-	<input type="hidden" name="nextStep" value="{$nextStep|escape}">
+	{* Hidden field to manage state. *}
+	<input type="hidden" name="currentStep" value="{$currentStep.name|escape}">
 {/strip}
