@@ -15,9 +15,11 @@
 			{/if}
 			{*Allows users to move forwards in the flow*}
 			{if $currentStep.name != "done"}
-				<button type="submit" name="navigation" value="next" id="continueButton" class="btn btn-primary" {if $currentStep.name|contains:"verification_check_"}disabled{/if}>
+				<button type="submit" name="navigation" value="next" id="continueButton" class="btn btn-primary" {if $currentStep.name == "verification_check"}disabled{/if}>
 					{if $currentStep.name == "submit"}
 						{translate text="Submit Application" isPublicFacing=true}
+					{elseif $currentStep.name == "verifyContactInformation"}
+						{translate text="Confirm and Continue" isPublicFacing=true}
 					{else}
 						{translate text="Continue" isPublicFacing=true}
 					{/if}

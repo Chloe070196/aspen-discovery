@@ -12,9 +12,9 @@ class MyAccount_AccountRenewal extends MyAccount {
 			return;
 		}
 
-		$ils = $user->getILSName();
+		$ilsName = $user->getILSName();
 		// The present version only supports Koha, but is written in such a way that enabling support for ILS can be done as future enhancements
-		if ($ils !== 'koha') {
+		if ($ilsName !== 'koha') {
 			$this->display('accountRenewal.tpl', 'Renew Your Account');
 			$interface->assign('ilsUnsupported', true);
 			return;
@@ -23,20 +23,19 @@ class MyAccount_AccountRenewal extends MyAccount {
 		$sessionKey = 'account_renewal_data_' . $user->id;
 		$renewalInfo = $this->getRenewalInformation($sessionKey, $user->unique_ils_id);
 		
-		$verificationChecks = $renewalInfo['data']['verification_checks'] ?? [];
+		$userAgreementVerificationMessage = $renewalInfo['data']['self_renewal_settings']['self_renewal_information_message'] ?? '';
 		$selfRenewalSettings = $renewalInfo['data']['self_renewal_settings'] ?? [];
-		$totalChecks = count($verificationChecks);
-
+		$hasVerificationCheck = !empty($userAgreementVerificationMessage);
 
 		$currentStepName = $_POST['currentStep'] ?? $_GET['currentStep'] ?? 'start'; 
 		$requestedDirection = $_POST['navigation'] ?? 'reload';
-
 		$userAgreementResponse = $_POST['userAgrees'] ?? '';
 
 		$validationError = '';
 		$currentWarningMessage = '';
 
-		if (str_starts_with($currentStepName, 'verification_check_')) {
+		// handle user responses to the verification check step
+		if ($currentStepName === 'verification_check') {
 			$result = $this->checkUserAgreement($userAgreementResponse);
 			if (isset($result['message'])) {
 				if ($userAgreementResponse === 'no') {
@@ -49,20 +48,23 @@ class MyAccount_AccountRenewal extends MyAccount {
 
 		// override currentStep with the next as we prepare to relaunch
 		$direction = $this->getDirection($currentStepName, $requestedDirection, $result['userAgrees'] ?? false);
-		$currentStepName = $this->getNextStep($direction, $currentStepName, (int)$totalChecks);
-		$currentStep = $this->getCurrentStepData($currentStepName, $verificationChecks);
+		$nextStepName = $this->getNextStep($direction, $currentStepName, $hasVerificationCheck);
+		$nextStep = $this->getCurrentStepData($nextStepName, $userAgreementVerificationMessage);
 
-		if ($currentStepName === 'verifyContactInformation') {
-			$contactInfoData = $this->getContactInformationData();
+		// generate the contact information form for use
+		if ($nextStepName === 'verifyContactInformation') {
+			$interface->assign('canSave', false);
+			$interface->assign('canUpdateContactInfo', false);
+			$contactInfoData = $this->getContactInformationData($ilsName);
 			foreach ($contactInfoData as $key => $value) {
 				$interface->assign($key, $value);
 			}
 			$interface->assign('edit', true);
 		}
 
-		$interface->assign('currentStep', $currentStep);
+		$interface->assign('currentStep', $nextStep);
 		$interface->assign('selfRenewalSettings', $selfRenewalSettings);
-		$interface->assign('totalVerificationChecks', $totalChecks);
+		$interface->assign('hasVerificationCheck', $hasVerificationCheck);
 		$interface->assign('ilsUnsupported', false);
 		$interface->assign('validationError', $validationError);
 		$interface->assign('currentWarningMessage', $currentWarningMessage);
@@ -71,7 +73,7 @@ class MyAccount_AccountRenewal extends MyAccount {
 		$this->display('accountRenewal.tpl', 'Renew Your Account');
 	}
 
-	private function getCurrentStepData(string $currentStepName, array $verificationChecks): array {
+	private function getCurrentStepData(string $currentStepName, string $userAgreementVerificationMessage): array {
 		$data = [
 			'name' => $currentStepName,
 			'title' => '',
@@ -81,13 +83,9 @@ class MyAccount_AccountRenewal extends MyAccount {
 		if ($currentStepName === 'start') {
 			$data['title'] = 'Start';
 			$data['description'] = 'Welcome to the account renewal process. Please click Continue to begin.';
-		} elseif (str_starts_with($currentStepName, 'verification_check_')) {
+		} elseif ($currentStepName === 'verification_check') {
 			$data['title'] = 'Verification Questions';
-			$displayIndex = (int)str_replace('verification_check_', '', $currentStepName);
-			$checkIndex = $displayIndex - 1;
-			if (isset($verificationChecks[$checkIndex])) {
-				$data['description'] = $verificationChecks[$checkIndex]['description'] ?? '';
-			}
+			$data['description'] = $userAgreementVerificationMessage;
 		} elseif ($currentStepName === 'verifyContactInformation') {
 			$data['title'] = 'Confirm Contact Information';
 			$data['description'] = 'Please review and update your contact information as needed.';
@@ -95,7 +93,7 @@ class MyAccount_AccountRenewal extends MyAccount {
 			$data['title'] = 'Request Submission.';
 			$data['description'] = 'All verification steps complete. Proceed to final renewal.';
 		} else {
-			$data['title'] = 'Thank you!.';
+			$data['title'] = 'Thank you!';
 			$data['description'] = 'An unexpected error occurred.';
 		}
 
@@ -107,7 +105,7 @@ class MyAccount_AccountRenewal extends MyAccount {
 			return 'back';
 		}
 		if ($requestedDirection === 'next' || $requestedDirection === 'continue') {
-			if (str_starts_with($currentStepName, 'verification_check_') && !$userAgrees) {
+			if ($currentStepName === 'verification_check' && !$userAgrees) {
 				return 'stay';
 			}
 			return 'next';
@@ -115,37 +113,27 @@ class MyAccount_AccountRenewal extends MyAccount {
 		return 'stay';
 	}
 
-	private function getNextStep(string $direction, string $currentStepName, int $totalChecks): string {
+	private function getNextStep(string $direction, string $currentStepName, bool $hasVerificationCheck): string {
 		if ($direction === 'stay') {
 			return $currentStepName;
 		}
 
 		if ($currentStepName === 'start') {
 			if ($direction === 'next') {
-				return $totalChecks > 0 ? 'verification_check_1' : 'verifyContactInformation';
+				return $hasVerificationCheck ? 'verification_check' : 'verifyContactInformation';
 			}
 			return 'start';
 		}
 
-		if (str_starts_with($currentStepName, 'verification_check_')) {
-			$displayIndex = (int)str_replace('verification_check_', '', $currentStepName);
-			if ($direction === 'next') {
-				if ($displayIndex < $totalChecks) {
-					return 'verification_check_' . ($displayIndex + 1);
-				}
-				return 'verifyContactInformation';
-			}
-			if ($displayIndex > 1) {
-				return 'verification_check_' . ($displayIndex - 1);
-			}
-			return 'start';
+		if ($currentStepName === 'verification_check') {
+			return $direction === 'next' ? 'verifyContactInformation' : 'start';
 		}
 
 		if ($currentStepName === 'verifyContactInformation') {
 			if ($direction === 'next') {
 				return 'done';
 			}
-			return $totalChecks > 0 ? 'verification_check_' . $totalChecks : 'start';
+			return $hasVerificationCheck ? 'verification_check' : 'start';
 		}
 
 		return $currentStepName;
@@ -171,12 +159,18 @@ class MyAccount_AccountRenewal extends MyAccount {
 		return $result;
 	}
 
-	private function getContactInformationData(): array {
+	private function getContactInformationData(string $ilsName): array {
 		$data = [];
 
 		$user = UserAccount::getLoggedInUser();
 
-		$user->loadContactInformation();
+		$patronUpdateForm = $user->getPatronUpdateForm();
+		if ($patronUpdateForm != null) {
+			$data['patronUpdateForm'] = $patronUpdateForm;
+		} else {
+			$user->loadContactInformation();
+		}
+
 		$data['profile'] = $user;
 
 		$patronHomeLibrary = $user->getHomeLibrary(true);
@@ -226,16 +220,18 @@ class MyAccount_AccountRenewal extends MyAccount {
 		$data['showPreferredNameInProfile'] = $user->showPreferredNameInProfile();
 		$data['allowUpdatesOfPreferredName'] = $user->allowUpdatesOfPreferredName();
 		$data['pickupLocations'] = $user->getValidPickupBranches($user->getAccountProfile()->recordSource);
+		$data['isHorizon'] = ($ilsName == 'horizon');
+		$data['isCarlX'] = ($ilsName == 'carlx');
+		$data['isSymphony'] = ($ilsName == 'symphony');
+		$data['millenniumNoAddress'] = $canUpdateContactInfo && !$canUpdateAddress && in_array($ilsName, ['millennium', 'sierra']);
+		$data['barcodePin'] = true;
+		$data['offline'] = false;
+		$data['allowHomeLibraryUpdates'] = false;
+		$data['libraryName'] = '';
 
 		return $data;
 	}
 
-
-	/**
-	 * Gets account renewal information from the ILS driver, caching the result in the session.
-	 *
-	 * @return array The renewal information from the ILS driver.
-	 */
 	private function getRenewalInformation(string $sessionKey, string $userIlsId): array {
 		if (session_status() == PHP_SESSION_NONE) {
 			session_start();
