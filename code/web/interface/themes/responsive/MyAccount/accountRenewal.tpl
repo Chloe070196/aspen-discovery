@@ -1,17 +1,15 @@
 {strip}
 	<div id="main-content">
-	<div class="page">
 		{if empty($loggedIn)}
 				{translate text="You must sign in to view this information." isPublicFacing=true}<a href='/MyAccount/Login' class="btn btn-primary">{translate text="Sign In" isPublicFacing=true}</a>
 		{elseif $ilsUnsupported} 
 			{translate text="Card and account renewals are not supported." isPublicFacing=true}
 		{else}
 			<h1>{translate text='Account Renewal' isPublicFacing=true}</h1>
-			{include file="MyAccount/accountRenewalHeadings.tpl"}
-			{include file="MyAccount/accountRenewalWarnings.tpl"}
-			{include file="MyAccount/accountRenewalForm.tpl"}
+			{include file="MyAccount/accountRenewal/headings.tpl"}
+			{include file="MyAccount/accountRenewal/warnings.tpl"}
+			{include file="MyAccount/accountRenewal/form.tpl"}
 		{/if}
-		</div>
 	</div>
 {/strip}
 

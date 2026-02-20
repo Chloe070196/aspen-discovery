@@ -12,6 +12,6 @@
     	{else}
     		<p>{translate text='An unexpected error occurred.' isPublicFacing=true}</p>
     	{/if}
-    	{include file="MyAccount/accountRenewalNavigation.tpl"}
+    	{include file="MyAccount/accountRenewal/navigation.tpl"}
     </form>
 {/strip}				
