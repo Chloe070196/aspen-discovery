@@ -19,7 +19,7 @@
 					{if $currentStep.name == "submit"}
 						{translate text="Submit Application" isPublicFacing=true}
 					{elseif $currentStep.name == "verifyContactInformation"}
-						{translate text="Confirm and Continue" isPublicFacing=true}
+						{translate text="Submit account renewal request" isPublicFacing=true}
 					{else}
 						{translate text="Continue" isPublicFacing=true}
 					{/if}

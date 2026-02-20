@@ -11,4 +11,18 @@
 			{include file="MyAccount/contactInformationForm.tpl"}
 		{/if}
     {/if}
+	{if $currentStep.name == 'done'}
+		{if $renewalSuccess}
+			<div class="alert alert-success">
+				{translate text="Your account has been successfully renewed." isPublicFacing=true}
+				{if $renewalData.expiry_date}
+					<br/>{translate text="New expiration date: " isPublicFacing=true} {$renewalData.expiry_date}
+				{/if}
+			</div>
+		{else}
+			<div class="alert alert-danger">
+				{translate text="There was an error renewing your account: " isPublicFacing=true} {$renewalError}
+			</div>
+		{/if}
+	{/if}
 {/strip}				
