@@ -871,4 +871,57 @@ class Events_AJAX extends JSON_Action {
 		];
 	}
 
+	/**
+	 * @return array
+	 */
+	public function updateTotalWalkins(): array {
+		require_once ROOT_DIR . '/sys/Events/EventRegistrationService.php';
+
+		$eventInstanceId = $_REQUEST['eventInstanceId'] ?? null;
+		$totalWalkins = $_REQUEST['totalWalkins'] ?? 0;
+
+		if (empty($eventInstanceId)) {
+			return [
+				'success' => false,
+				'title' => translate(['text' => 'Error', 'isAdminFacing' => true]),
+				'message' => translate(['text' => 'Event instance ID is required.', 'isAdminFacing' => true]),
+			];
+		}
+
+		require_once ROOT_DIR . '/sys/Events/EventInstance.php';
+		$eventInstance = new EventInstance();
+		$eventInstance->id = $eventInstanceId;
+		if (!$eventInstance->find(true)) {
+			return [
+				'success' => false,
+				'title' => translate(['text' => 'Error', 'isAdminFacing' => true]),
+				'message' => translate(['text' => 'Event not found.', 'isAdminFacing' => true]),
+			];
+		}
+
+		$parentEvent = $eventInstance->getParentEvent();
+		if (!EventRegistrationService::canStaffRegisterUsersForLocation($parentEvent->locationId)) {
+			return [
+				'success' => false,
+				'title' => translate(['text' => 'Permission Denied', 'isAdminFacing' => true]),
+				'message' => translate(['text' => 'You do not have permission to update walkins for this event.', 'isAdminFacing' => true]),
+			];
+		}
+
+		$eventInstance->totalWalkins = (int)$totalWalkins;
+		if ($eventInstance->update()) {
+			return [
+				'success' => true,
+				'title' => translate(['text' => 'Success', 'isAdminFacing' => true]),
+				'message' => translate(['text' => 'Total walkins updated successfully.', 'isAdminFacing' => true]),
+			];
+		}
+
+		return [
+			'success' => false,
+			'title' => translate(['text' => 'Error', 'isAdminFacing' => true]),
+			'message' => translate(['text' => 'Failed to update total walkins.', 'isAdminFacing' => true]),
+		];
+	}
+
 }

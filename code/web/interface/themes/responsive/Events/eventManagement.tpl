@@ -22,6 +22,7 @@
 							<th>{translate text="Time" isAdminFacing=true}</th>
 							<th>{translate text="Location" isAdminFacing=true}</th>
 							<th>{translate text="Registrations" isAdminFacing=true}</th>
+							<th>{translate text="Walk-ins" isAdminFacing=true}</th>
 							<th>{translate text="Actions" isAdminFacing=true}</th>
 						</tr>
 					</thead>
@@ -37,6 +38,19 @@
 									{if $event.numberOfSeats}
 										/ {$event.numberOfSeats}
 									{/if}
+								</td>
+								<td>
+									<div id="walkinsContainer-{$event.instanceId}" style="display: flex; align-items: center; gap: 8px;">
+										<input type="text" id="totalWalkinsDisplay-{$event.instanceId}" value="{$event.totalWalkins}" disabled style="width: 40px; text-align: center;" class="form-control input-sm">
+										<div class="btn-group">
+											<button type="button" class="btn btn-xs btn-default" onclick="AspenDiscovery.Events.changeWalkins({$event.instanceId}, -1);" title="{translate text="Decrease" isAdminFacing=true}">
+												<i class="fas fa-minus"></i>
+											</button>
+											<button type="button" class="btn btn-xs btn-default" onclick="AspenDiscovery.Events.changeWalkins({$event.instanceId}, 1);" title="{translate text="Increase" isAdminFacing=true}">
+												<i class="fas fa-plus"></i>
+											</button>
+										</div>
+									</div>
 								</td>
 								<td>
 									<a href="/Events/EventManagement?eventInstanceId={$event.instanceId}" class="btn btn-sm btn-primary">
@@ -68,6 +82,7 @@
 							<p>
 								{include file="Events/capacityDisplay.tpl" compact=false}
 							</p>
+								{include file="Events/walkinsCounter.tpl"}
 						</div>
 					</div>
 

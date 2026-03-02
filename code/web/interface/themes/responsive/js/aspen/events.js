@@ -1031,6 +1031,37 @@ AspenDiscovery.Events = (function(){
 				setTimeout(function() { cell.css('background-color', ''); }, 1200);
 				checkbox.prop('checked', !attended);
 			});
+		},
+
+		updateTotalWalkins: function(eventInstanceId, amount) {
+			const display = $("#totalWalkinsDisplay-" + eventInstanceId);
+			const container = $("#walkinsContainer-" + eventInstanceId);
+			
+			const currentTotal = parseInt(display.val()) || 0;
+			let newTotal = currentTotal + amount;
+			
+			if (newTotal < 0) {
+				return;
+			}
+
+			const url = Globals.path + "/Events/AJAX";
+			const params = {
+				method: 'updateTotalWalkins',
+				eventInstanceId: eventInstanceId,
+				totalWalkins: newTotal
+			};
+
+			$.getJSON(url, params, function(data) {
+				if (data.success) {
+					display.val(newTotal);
+					display.css('border', '2px solid #28a745');
+					setTimeout(function() { display.css('border', ''); }, 800);
+				} else {
+					AspenDiscovery.showMessage(data.title, data.message);
+				}
+			}).fail(function() {
+				AspenDiscovery.showMessage("Error", "Failed to update walkins.");
+			});
 		}
 	};
 }(AspenDiscovery.Events || {}));

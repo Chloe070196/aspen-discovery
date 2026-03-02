@@ -19,6 +19,9 @@ class EventInstance extends DataObject {
 	public $dateUpdated;
 	public $deleted;
 
+	// Attendance data
+	public $totalWalkins;
+
 	static $_objectStructure = [];
 	static function getObjectStructure(string $context = ''): array {
 		if (isset(self::$_objectStructure[$context]) && self::$_objectStructure[$context] !== null) {
@@ -120,6 +123,7 @@ class EventInstance extends DataObject {
 			'numberOfSeats',
 			'waitingListNumberOfSeats',
 			'availableNumberOfWaitingListSeats',
+			'totalWalkins'
 		];
 	}
 

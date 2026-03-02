@@ -128,6 +128,13 @@ function getAspenEventRegistrationUpdates() {
 					value TEXT DEFAULT NULL
 				) ENGINE INNODB CHARACTER SET utf8 COLLATE utf8_general_ci",
 			] 
-		] //add_user_aspen_event_instance_registrations_event_field
+		], //add_user_aspen_event_instance_registrations_event_field
+		'add_totalWalkins_to_event_instances' => [
+			'title' => 'Add totalWalkins to Events Instances',
+			'description' => 'Add Total Walk-ins to Event Instances so they may be monitored',
+			'sql' => [
+				'ALTER TABLE event_instance ADD COLUMN totalWalkins INT DEFAULT NULL',
+			],
+		], // add_totalWalkins_to_events
 	];
 }
