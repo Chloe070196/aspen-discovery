@@ -320,7 +320,7 @@ class EmailTemplate extends DataObject {
 			$text = str_replace('%campaign.name%', $parameters['campaignName'] ?? '', $text);
 			$text = str_replace('%milestone.name%', $parameters['milestoneName'] ?? '', $text);
 			$text = str_replace('%milestone.reward%', $parameters['milestoneReward'] ?? '', $text);
-		} elseif ($this->templateType == 'registerForEventFromWaitingList') {
+		} elseif ($this->templateType == 'registerForEventFromWaitingList' || $this->templateType == 'eventCancellation') {
 			$text = str_replace('%event.title%', $parameters['eventTitle'] ?? '', $text);
 			$text = str_replace('%event.date%', $parameters['eventDate'] ?? '', $text);
 			$text = str_replace('%event.time%', $parameters['eventTime'] ?? '', $text);
