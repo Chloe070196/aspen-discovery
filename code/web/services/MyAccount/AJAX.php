@@ -12360,12 +12360,63 @@ class MyAccount_AJAX extends JSON_Action {
 		return $result;
 	}
 
-	// private function releaseEventWaitingListSeat($eventInstanceId): void {
-	// 	global $logger;
-	// 	$logger->log("Called releaseEventWaitingList", Logger::LOG_ERROR);
-	// 	// $this->incrementAvailableWaitingListSeats($eventInstanceId);
-	// 	$this->processEventWaitingListSeats($eventInstanceId);
-	// }
+	public function leaveEventWaitingList($eventInstanceId): array {
+		$result = [
+			'success' => false,
+			'title' => translate([
+				'text' => 'Error',
+				'isPublicFacing' => true,
+			]),
+			'message' => translate([
+				'text' => 'Unknown error occurred',
+				'isPublicFacing' => true,
+			])
+		];
+
+		if (!UserAccount::isLoggedIn()) {
+			$result['message'] = translate([
+				'text' => 'You must be logged in to join the waiting list.',
+				'isPublicFacing' => true,
+			]);
+			return $result;
+		}
+
+		$user = UserAccount::getLoggedInUser();
+		$userId = $user->id;
+		$eventInstanceId = $_REQUEST['eventInstanceId'] ?? null;
+
+		if (empty($eventInstanceId)) {
+			$result['message'] = translate([
+				'text' => 'Invalid Event ID.',
+				'isPublicFacing' => true,
+			]);
+			return $result;
+		}
+
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceWaitingList.php';
+		$existingEntry = new UserAspenEventInstanceWaitingList();
+		$existingEntry->eventInstanceId = $eventInstanceId;
+		$existingEntry->userId = $userId;
+		
+		if (!$existingEntry->find(true)) {
+			$result['success'] = false;
+			$result['title'] = translate([
+				'text' => 'Waiting List Spot Not Found',
+				'isPublicFacing' => true,
+			]);
+			$result['message'] = translate([
+				'text' => 'You were not found on the waiting list for this event instance.',
+				'isPublicFacing' => true,
+			]);
+			return $result;
+		}
+
+		$existingEntry->leftAt = date('Y-m-d');
+		$existingEntry->update();
+
+		$this->incrementAvailableWaitingListSeats($eventInstanceId);
+		// $this->processEventWaitingListSeats($eventInstanceId);  // analyse whether this is helpful
+	}
 
 	private function incrementAvailableWaitingListSeats($eventInstanceId): void {
 		//TODOD:: Should only be called when the first person in the waiting list either books through their link
