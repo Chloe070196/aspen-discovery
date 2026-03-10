@@ -12419,16 +12419,20 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	private function incrementAvailableWaitingListSeats($eventInstanceId): void {
-		//TODOD:: Should only be called when the first person in the waiting list either books through their link
+		require_once ROOT_DIR . '/sys/Events/Event.php';
+		$event = new Event();
+		$event->id = $eventInstance->eventId;
+		if (!$event->find(true)) {
+			return;
+		}
+		if ((int)$event->waitingListNumberOfSeats <= (int)$eventInstance->availableNumberOfWaitingListSeats) {
+			return;
+		}
+
 		require_once ROOT_DIR . '/sys/Events/EventInstance.php';
-		global $logger;
-
-		$logger->log("Called increment available waiting list seat", Logger::LOG_ERROR);
-
 		$eventInstance = new EventInstance();
 		$eventInstance->id = $eventInstanceId;
 		if ($eventInstance->find(true)) {
-			//TODO:: THIS should only add until available seats is in line with max seats.
 			$eventInstance->availableNumberOfWaitingListSeats++;
 			$logger->log("updated number of waiting list seats", Logger::LOG_ERROR);
 			$eventInstance->update();
