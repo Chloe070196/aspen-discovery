@@ -59,6 +59,13 @@ function getAspenEventWaitingListUpdates() {
 				'ALTER TABLE user_aspen_event_instance_waiting_list ADD COLUMN toastShown TINYINT(1) DEFAULT 0',
 			],
 		], //add_column_to_track_if_toast_notification_has_been_displayed
+		'add_column_to_track_if_user_has_left' => [
+			'title' => 'Add Column to Track if User Has Left',
+			'description' => 'Add a column to track whether the user has left the waiting list',
+			'sql' => [
+				'ALTER TABLE user_aspen_event_instance_waiting_list ADD COLUMN leftAt TINYINT(1) DEFAULT 0',
+			],
+		], //add_column_to_track_if_user_has_left
 		'add_column_to_track_if_toast_notifications_should_show_for_events' => [
 			'title' => 'Add Column to Track if Toast Notifications Should Show For Events',
 			'description' => 'Add a column to track whether toast notifications should display for events',
