@@ -12415,6 +12415,10 @@ class MyAccount_AJAX extends JSON_Action {
 		$existingEntry->update();
 
 		$this->incrementAvailableWaitingListSeats($eventInstanceId);
+		// TODO: decrease the position of each user being the $existingEntry->postion by one
+		// TODO: write a service method to find and update these users. Store in on the waiting list class
+		// TODO: clean up commented out code
+		// TODO: move private utilities onto other classes where relevant
 		// $this->processEventWaitingListSeats($eventInstanceId);  // analyse whether this is helpful
 	}
 
