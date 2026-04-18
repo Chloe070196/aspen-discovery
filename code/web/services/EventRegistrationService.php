@@ -111,6 +111,18 @@ class EventRegistrationService {
 	}
 
 	public static function getRegistrationCount(int $eventInstanceId): int {
+		$eventInstance = new EventInstance;
+		$eventInstance->id = $eventInstanceId;
+		$eventInstance->find(true);
+		$eventType = $eventInstance->getEventType();
+		if ($eventType !== null && !empty($eventType->getEventTypeAttendeeCategories())) {
+			require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistrationAttendee.php';
+			$attendeeTotal = UserAspenEventInstanceRegistrationAttendee::getTotalAttendeesForInstance((int)$eventInstanceId);
+			if ($attendeeTotal > 0) {
+				return $attendeeTotal;
+			}
+		}
+
 		$registration = new UserAspenEventInstanceRegistration();
 		$registration->eventInstanceId = $eventInstanceId;
 		$registration->status = 'registered';
