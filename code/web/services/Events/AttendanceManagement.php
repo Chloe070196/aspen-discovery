@@ -105,6 +105,7 @@ class Events_AttendanceManagement extends Admin_Admin {
 						'availableSeats' => EventRegistrationService::getAvailableSeats($eventInstance),
 						'numberOfSeats' => $eventInstance->getEffectiveNumberOfSeats(),
 						'registrationRequired' => (bool)$parentEvent->registrationRequired,
+						'attendeeCategoryBreakdown' => $eventInstance->getAttendeeCategoryBreakdown(),
 					];
 				}
 			}
