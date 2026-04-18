@@ -76,6 +76,30 @@ class EventRegistrationService {
 		return self::publicErrorResult(translate(['text' => 'Failed to cancel registration.', 'isPublicFacing' => true]));
 	}
 
+	public static function getAttendeeCategoryBreakdown(int $eventInstanceId): array {
+		$categories = self::getEventTypeAttendeeCategories($eventInstanceId);
+		if (empty($categories)) {
+			return [];
+		}
+
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistrationAttendee.php';
+		$countsByCategory = UserAspenEventInstanceRegistrationAttendee::getCategoryAttendeeCountsForInstance($eventInstanceId);
+
+		$breakdown = [];
+		foreach ($categories as $eventTypeAttendeeCategory) {
+			$attendeeCategory = $eventTypeAttendeeCategory->getCategory();
+			if ($attendeeCategory === null) {
+				continue;
+			}
+			$breakdown[] = [
+				'name' => $attendeeCategory->name,
+				'count' => $countsByCategory[(int)$eventTypeAttendeeCategory->attendeeCategoryId] ?? 0,
+			];
+		}
+
+		return $breakdown;
+	}
+
 	/**
 	 * Check if a user is registered for an event instance
 	 */
@@ -111,13 +135,9 @@ class EventRegistrationService {
 	}
 
 	public static function getRegistrationCount(int $eventInstanceId): int {
-		$eventInstance = new EventInstance;
-		$eventInstance->id = $eventInstanceId;
-		$eventInstance->find(true);
-		$eventType = $eventInstance->getEventType();
-		if ($eventType !== null && !empty($eventType->getEventTypeAttendeeCategories())) {
+		if (!empty(self::getEventTypeAttendeeCategories($eventInstanceId))) {
 			require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistrationAttendee.php';
-			$attendeeTotal = UserAspenEventInstanceRegistrationAttendee::getTotalAttendeesForInstance((int)$eventInstanceId);
+			$attendeeTotal = UserAspenEventInstanceRegistrationAttendee::getTotalAttendeesForInstance($eventInstanceId);
 			if ($attendeeTotal > 0) {
 				return $attendeeTotal;
 			}
@@ -127,6 +147,17 @@ class EventRegistrationService {
 		$registration->eventInstanceId = $eventInstanceId;
 		$registration->status = 'registered';
 		return $registration->count();
+	}
+
+	private static function getEventTypeAttendeeCategories(int $eventInstanceId): array {
+		$eventInstance = new EventInstance();
+		$eventInstance->id = $eventInstanceId;
+		$eventInstance->find(true);
+		$eventType = $eventInstance->getEventType();
+		if ($eventType === null) {
+			return [];
+		}
+		return $eventType->getEventTypeAttendeeCategories() ?: [];
 	}
 
 	public static function getWaitingListCount(int $eventInstanceId): int {
