@@ -8679,14 +8679,24 @@ class MyAccount_AJAX extends JSON_Action {
 			return $result;
 		}
 
-		$waitingListInfo = EventRegistrationService::getWaitingListInfoForUser($userId, $eventInstanceId);
-		if (!EventRegistrationService::hasAvailableSeats($eventInstance, 1) && !$waitingListInfo['canRegister']) {
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistrationAttendee.php';
+		$attendeeCounts = [];
+		if (isset($_REQUEST['attendeeCategory']) && is_array($_REQUEST['attendeeCategory'])) {
+			$attendeeCounts = $_REQUEST['attendeeCategory'];
+		}
+
+		$validatedCounts = UserAspenEventInstanceRegistrationAttendee::validateAttendeeCounts($eventInstance, $attendeeCounts);
+		if ($validatedCounts === false) {
 			$result['message'] = translate([
-				'text' => 'This event is full. No seats available.',
+				'text' => 'Invalid attendee counts. One or more categories exceed the allowed maximum.',
 				'isPublicFacing' => true
 			]);
 			return $result;
 		}
+
+		$requestedSeats = !empty($validatedCounts) ? array_sum($validatedCounts) : 1;
+
+		$waitingListInfo = EventRegistrationService::getWaitingListInfoForUser($userId, $eventInstanceId);
 
 		// add the event to saved events if it has not yet been saved
 		EventRegistrationService::saveToUserEvents($eventInstance, $userId);
@@ -8701,11 +8711,24 @@ class MyAccount_AJAX extends JSON_Action {
 			EventRegistrationService::saveToUserEvents($eventInstance, $viewerId);
 		}
 
+		if (!EventRegistrationService::hasAvailableSeats($eventInstance, $requestedSeats) && !$waitingListInfo['canRegister']) {
+			$result['message'] = translate([
+				'text' => "This event is full — no seats are currently available. We've saved it to your events list so you can keep track of it.",
+				'isPublicFacing' => true
+			]);
+			return $result;
+		}
+
+
 		// register the user
 		$registration = new UserAspenEventInstanceRegistration();
 		$registration->userId = $userId;
 		$registration->eventInstanceId = $eventInstanceId;
 		$registration->registerUser();
+
+		if (!empty($validatedCounts)) {
+			UserAspenEventInstanceRegistrationAttendee::saveForRegistration((int)$registration->id, $validatedCounts);
+		}
 
 		// save the user inputed registration information
 		foreach ($_REQUEST as $key => $value) {
