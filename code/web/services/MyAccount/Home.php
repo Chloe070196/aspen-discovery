@@ -26,8 +26,8 @@ class MyAccount_Home extends MyAccount {
 
 			$userHasEventsToRegister = false;
 			if ($homeLibraryDisplayEventNotifications) {
-				require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
-				$userHasEventsToRegister = UserAspenEventInstanceRegistration::isUserInvitedToRegister((int)$userId);
+				require_once ROOT_DIR . '/services/EventRegistrationService.php';
+				$userHasEventsToRegister = EventRegistrationService::isUserInvitedToRegister((int)$userId);
 			}
 
 			// Check to see if the user has rated any titles

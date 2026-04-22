@@ -43,7 +43,7 @@ class EventRegistrationService {
 		$registration->eventInstanceId = $eventInstanceId;
 
 		$waitingListInfo = $registration->getWaitingListInfo();
-		if (!$eventInstance->hasAvailableSeats(1) && !$waitingListInfo['canRegister']) {
+		if (!self::hasAvailableSeats($eventInstance, 1) && !$waitingListInfo['canRegister']) {
 			$result['message'] = translate(['text' => 'This event is full. No seats available.', 'isPublicFacing' => true]);
 			return $result;
 		}
@@ -55,7 +55,7 @@ class EventRegistrationService {
 			$result['title'] = translate(['text' => 'Registration Successful', 'isPublicFacing' => true]);
 			$result['message'] = translate(['text' => 'User has been registered for this event.', 'isPublicFacing' => true]);
 
-			$eventInstance->saveToUserEvents($userId, $staffUserId);
+			self::saveToUserEvents($eventInstance, $userId, $staffUserId);
 		} else {
 			$result['message'] = translate(['text' => 'Failed to create registration.', 'isPublicFacing' => true]);
 		}
@@ -97,6 +97,27 @@ class EventRegistrationService {
 	}
 
 	/**
+	 * Check if a user is registered for an event instance
+	 */
+	public static function isUserRegisteredForEvent(int $userId, int $eventInstanceId): bool {
+		$registration = new UserAspenEventInstanceRegistration();
+		$registration->userId = $userId;
+		$registration->eventInstanceId = $eventInstanceId;
+		$registration->status = 'registered';
+		return (bool)$registration->find(true);
+	}
+
+	/**
+	 * Get waiting list info for a user on an event instance
+	 */
+	public static function getWaitingListInfoForUser(int $userId, int $eventInstanceId): array {
+		$registration = new UserAspenEventInstanceRegistration();
+		$registration->userId = $userId;
+		$registration->eventInstanceId = $eventInstanceId;
+		return $registration->getWaitingListInfo();
+	}
+
+	/**
 	 * Get all registrations for an event instance
 	 * @param int $eventInstanceId The event instance ID
 	 * @return UserAspenEventInstanceRegistration[]
@@ -112,9 +133,375 @@ class EventRegistrationService {
 		return $registrations;
 	}
 
+	public static function getRegistrationCount(int $eventInstanceId): int {
+		$registration = new UserAspenEventInstanceRegistration();
+		$registration->eventInstanceId = $eventInstanceId;
+		$registration->status = 'registered';
+		return $registration->count();
+	}
+
+	public static function getWaitingListCount(int $eventInstanceId): int {
+		$registration = new UserAspenEventInstanceRegistration();
+		$registration->eventInstanceId = $eventInstanceId;
+		$registration->whereAdd('status IN ("waiting", "invited")');
+		return $registration->count();
+	}
+
+	public static function getAvailableSeats(EventInstance $instance): ?int {
+		$capacity = $instance->getEffectiveNumberOfSeats();
+		if ($capacity === null) {
+			return null;
+		}
+
+		// If anyone is queued on the waiting list, block direct registration — new users must join the queue
+		$waitingListCount = self::getWaitingListCount((int)$instance->id);
+		if ($waitingListCount > 0) {
+			return 0;
+		}
+
+		return max(0, $capacity - self::getRegistrationCount((int)$instance->id));
+	}
+
+	public static function hasAvailableSeats(EventInstance $instance, int $requestedSeats = 1): bool {
+		$capacity = $instance->getEffectiveNumberOfSeats();
+		if ($capacity === null) {
+			return true;
+		}
+		$available = self::getAvailableSeats($instance);
+		return $available >= $requestedSeats;
+	}
+
+	public static function getAvailableWaitingListSeats(EventInstance $instance): ?int {
+		$capacity = $instance->getEffectiveWaitingListNumberOfSeats();
+		if ($capacity === null) {
+			return null;
+		}
+		return max(0, $capacity - self::getWaitingListCount((int)$instance->id));
+	}
+
+	public static function isWaitingListFull(EventInstance $instance): bool {
+		$capacity = $instance->getEffectiveWaitingListNumberOfSeats();
+		if ($capacity === null) {
+			return false;
+		}
+		return self::getWaitingListCount((int)$instance->id) >= $capacity;
+	}
+
+	public static function getDisplayWaitingListSeats(EventInstance $instance): string {
+		if ($instance->deleted) {
+			return '—';
+		}
+
+		$totalSeats = $instance->getEffectiveWaitingListNumberOfSeats();
+		if ($totalSeats === null) {
+			return 'Available';
+		}
+
+		$available = self::getAvailableWaitingListSeats($instance);
+		return "{$available} / {$totalSeats}";
+	}
+
+	public static function getRegistrationStatusMessage(bool $waitingListEnabled, bool $userOnWaitingList, bool $canRegister, int $waitingListPosition, bool $isEventFull, bool $isWaitingListFull): string {
+		if (!$waitingListEnabled) {
+			return "Registration available";
+		}
+
+		if ($userOnWaitingList) {
+			if ($canRegister) {
+				return "Registration available";
+			}
+			return "On waiting list - position " . $waitingListPosition;
+		}
+
+		if (!$isEventFull) {
+			return "Registration available";
+		}
+
+		if (!$isWaitingListFull) {
+			return "Waiting List available";
+		}
+
+		return "Registration unavailable";
+	}
+
+	public static function getRegistrationAction(bool $isRegistered, bool $isEventFull, bool $waitingListEnabled, bool $userOnWaitingList, bool $canRegister, bool $isWaitingListFull): string {
+		if ($isRegistered) {
+			return 'registered';
+		}
+
+		if (!$isEventFull) {
+			return 'registrationAvailable';
+		}
+
+		if (!$waitingListEnabled) {
+			return 'eventFull';
+		}
+
+		if ($userOnWaitingList && $canRegister) {
+			return 'completeRegistration';
+		}
+
+		if ($userOnWaitingList) {
+			return 'showPosition';
+		}
+
+		if (!$isWaitingListFull) {
+			return 'joinWaitingList';
+		}
+
+		return 'eventFull';
+	}
+
+	/**
+	 * Returns IDs of invited registrations whose invite window has expired.
+	 *
+	 * Batches by EventType so each type's waitingListInviteExpiryHours is honoured
+	 * in a single query per type. Skips soft-deleted event instances.
+	 */
+	public static function getExpiredInvitedRowIds(): array {
+		require_once ROOT_DIR . '/sys/Events/EventType.php';
+
+		$eventType = new EventType();
+		$eventType->find();
+
+		$expiredIds = [];
+		while ($eventType->fetch()) {
+			$expiryHours = (int)$eventType->waitingListInviteExpiryHours;
+			if ($expiryHours <= 0) {
+				$expiryHours = 24;
+			}
+			$cutoff = date('Y-m-d H:i:s', time() - ($expiryHours * 3600));
+
+			$query = new UserAspenEventInstanceRegistration();
+			$query->status = 'invited';
+			$query->whereAdd('notifiedAt IS NOT NULL');
+			$query->whereAdd('notifiedAt < ' . $query->escape($cutoff));
+			$query->whereAdd('eventInstanceId IN (SELECT ei.id FROM event_instance ei JOIN event e ON ei.eventId = e.id WHERE ei.deleted = 0 AND e.eventTypeId = ' . (int)$eventType->id . ')');
+			$query->find();
+			while ($query->fetch()) {
+				$expiredIds[] = (int)$query->id;
+			}
+		}
+
+		return $expiredIds;
+	}
+
+	/**
+	 * Checks whether a user has at least one event instance to register to.
+	 */
+	public static function isUserInvitedToRegister(int $userId): bool {
+		$registration = new UserAspenEventInstanceRegistration();
+		$registration->userId = $userId;
+		$registration->status = 'invited';
+		return $registration->find(true);
+	}
+
+	/**
+	 * Returns users grouped by registration status for a single event instance.
+	 * Shape: ['registered' => [userId, ...], 'invited' => [...], 'waiting' => [...]]
+	 * Statuses with no users are omitted.
+	 */
+	public static function getUsersGroupedByStatusForInstance(int $eventInstanceId): array {
+		return self::getUsersGroupedByStatusForInstances([$eventInstanceId]);
+	}
+
+	/**
+	 * Returns users grouped by registration status across multiple event instances.
+	 * A user on multiple instances with the same status appears once in that group.
+	 */
+	public static function getUsersGroupedByStatusForInstances(array $eventInstanceIds): array {
+		if (empty($eventInstanceIds)) {
+			return [];
+		}
+
+		$instanceIdList = implode(',', array_map('intval', $eventInstanceIds));
+
+		$registration = new UserAspenEventInstanceRegistration();
+		$registration->whereAdd("eventInstanceId IN ($instanceIdList)");
+		$registration->find();
+
+		$grouped = [];
+		while ($registration->fetch()) {
+			$grouped[$registration->status][(int)$registration->userId] = true;
+		}
+
+		return array_map('array_keys', $grouped);
+	}
+
+	/**
+	 * Invite the next person on the waiting list for an event instance.
+	 */
+	public static function inviteNextOnWaitingList(EventInstance $instance): bool {
+		require_once ROOT_DIR . '/sys/Account/User.php';
+		global $logger;
+
+		$candidateIds = self::getWaitingRowIdsForInstance((int)$instance->id);
+
+		foreach ($candidateIds as $candidateId) {
+			$candidate = new UserAspenEventInstanceRegistration();
+			$candidate->id = $candidateId;
+			if (!$candidate->find(true)) {
+				continue;
+			}
+
+			$user = new User();
+			$user->id = $candidate->userId;
+			if (!$user->find(true)) {
+				$candidate->delete();
+				$logger->log("Waiting list candidate removed — user {$candidate->userId} not found (instance {$instance->id})", Logger::LOG_WARNING);
+				continue;
+			}
+
+			if (!$user->canReceiveEventNotifications()) {
+				$logger->log("Waiting list candidate skipped — user {$user->id} unreachable for event notifications (instance {$instance->id})", Logger::LOG_WARNING);
+				continue;
+			}
+
+			$candidate->status = 'invited';
+			$candidate->notifiedAt = date('Y-m-d H:i:s');
+			$candidate->update();
+
+			self::sendEventInstanceRegistrationInvitation($instance, (int)$candidate->userId);
+			return true;
+		}
+
+		return false;
+	}
+
+	private static function getWaitingRowIdsForInstance(int $eventInstanceId): array {
+		$query = new UserAspenEventInstanceRegistration();
+		$query->eventInstanceId = $eventInstanceId;
+		$query->status = 'waiting';
+		$query->orderBy('createdAt ASC');
+		$query->find();
+		$ids = [];
+		while ($query->fetch()) {
+			$ids[] = (int)$query->id;
+		}
+		return $ids;
+	}
+
+	private static function sendEventInstanceRegistrationInvitation(EventInstance $instance, int $userId): void {
+		$event = $instance->getParentEvent();
+
+		$homeLibrary = Library::getPatronHomeLibrary();
+		if (is_null($homeLibrary)) {
+			global $library;
+			$homeLibrary = $library;
+		}
+
+		self::sendEventEmail($userId, 'registerForEventFromWaitingList', [
+			'eventDate' => DateUtils::formatHumanDate($instance->date),
+			'eventTime' => $instance->time,
+			'eventTitle' => $event->title,
+			'library' => $homeLibrary,
+		]);
+	}
+
+	public static function sendEventEmail(int $userId, string $templateName, array $parameters): bool {
+		require_once ROOT_DIR . '/sys/Email/Mailer.php';
+		require_once ROOT_DIR . '/sys/Email/EmailTemplate.php';
+		require_once ROOT_DIR . '/sys/Account/User.php';
+		global $logger;
+
+		$emailTemplate = EmailTemplate::getActiveTemplate($templateName);
+		if (!$emailTemplate) {
+			$logger->log("Unable to find email template: $templateName", Logger::LOG_ERROR);
+			return false;
+		}
+
+		$user = new User();
+		$user->id = $userId;
+		if (!$user->find(true)) {
+			$logger->log("$templateName email skipped — user $userId not found", Logger::LOG_ERROR);
+			return false;
+		}
+
+		if (!$user->canReceiveEventNotifications()) {
+			return false;
+		}
+
+		$parameters['user'] = $user;
+
+		$sent = $emailTemplate->sendEmail($user->email, $parameters);
+		if (!$sent) {
+			$logger->log("$templateName email failed to send for user $userId", Logger::LOG_ERROR);
+			return false;
+		}
+		return true;
+	}
+
+	public static function saveToUserEvents(EventInstance $instance, int $userId, ?int $savedByStaffId = null): void {
+		require_once ROOT_DIR . '/sys/Events/AspenEventSetting.php';
+		$setting = new AspenEventSetting();
+		if (!$setting->find(true)) {
+			return;
+		}
+
+		$sourceId = 'aspenEvent_' . $setting->id . '_' . $instance->id;
+
+		require_once ROOT_DIR . '/sys/Events/UserEventsEntry.php';
+		$entry = new UserEventsEntry();
+		$entry->sourceId = $sourceId;
+		$entry->userId = $userId;
+		if ($entry->find(true)) {
+			return;
+		}
+
+		$event = $instance->getParentEvent();
+
+		$entry->title = mb_substr($event->title, 0, 50);
+		$entry->eventDate = strtotime($instance->date . ' ' . $instance->time);
+		$entry->regRequired = !empty($event->registrationRequired) ? 1 : 0;
+		$entry->savedByStaffId = $savedByStaffId;
+
+		require_once ROOT_DIR . '/sys/LibraryLocation/Location.php';
+		$location = new Location();
+		$location->locationId = $event->locationId;
+		$entry->location = $location->find(true) ? $location->displayName : '';
+
+		$entry->dateAdded = time();
+		$entry->insert();
+	}
+
+	public static function sendCancellationNotificationEmails(array $upcomingInstances, array $affectedUsersByStatus): void {
+		if (empty($upcomingInstances) || empty($affectedUsersByStatus)) {
+			return;
+		}
+		$formattedInstances = self::formatEmailTemplateEventInstances($upcomingInstances);
+		foreach ($affectedUsersByStatus as $status => $userIds) {
+			foreach ($userIds as $userId) {
+				self::sendEventEmail($userId, 'eventCancellation', [
+					'instances' => $formattedInstances,
+					'status' => $status,
+				]);
+			}
+		}
+	}
+
+	private static function formatEmailTemplateEventInstances(array $eventInstances): array {
+		require_once ROOT_DIR . '/sys/Events/Event.php';
+
+		$formatted = [];
+
+		foreach ($eventInstances as $instance) {
+			$event = new Event();
+			$event->id = $instance->eventId;
+			if (!$event->find(true)) {
+				continue;
+			}
+			$humanEventDate = DateUtils::formatHumanDate($instance->date);
+			$formatted[] = [
+				'eventTitle' => $event->title,
+				'eventDate' => $humanEventDate,
+				'eventTime' => $instance->time,
+			];
+		}
+		return $formatted;
+	}
+
 	/**
 	 * Check if a user has permission to register other users for events
-	 * @return bool
 	 */
 	public static function canStaffRegisterUsers(): bool {
 		global $library;
@@ -130,9 +517,11 @@ class EventRegistrationService {
 
 	/**
 	 * Check if a user has permission to view and manage patron event attendance
-	 * @return bool
 	 */
-	public static function canStaffManagePatronEventAttendance(): bool {
+	public static function canStaffManagePatronEventAttendance(?int $locationId = null): bool {
+		if ($locationId !== null) {
+			return self::canStaffManagePatronAttendanceForLocation($locationId);
+		}
 		return UserAccount::userHasPermission([
 			'Manage Patron Event Attendance for All Locations',
 			'Manage Patron Event Attendance for Home Library Locations',
@@ -142,8 +531,6 @@ class EventRegistrationService {
 
 	/**
 	 * Check if staff can register users for a specific event location
-	 * @param int $locationId The location ID of the event
-	 * @return bool
 	 */
 	public static function canStaffRegisterUsersForLocation(int $locationId): bool {
 		return self::hasPermissionForLocation(
@@ -156,8 +543,6 @@ class EventRegistrationService {
 
 	/**
 	 * Check if staff can view and manage patron event attendance for a specific event location
-	 * @param int $locationId The location ID of the event
-	 * @return bool
 	 */
 	public static function canStaffManagePatronAttendanceForLocation(int $locationId): bool {
 		return self::hasPermissionForLocation(
@@ -169,7 +554,7 @@ class EventRegistrationService {
 	}
 
 	private static function hasPermissionForLocation(int $locationId, string $systemLevelPermission, string $locationLevelPermission, string $libraryLevelPermission): bool {
-		if (!self::canStaffRegisterUsers()) {
+		if (!UserAccount::userHasPermission([$systemLevelPermission, $locationLevelPermission, $libraryLevelPermission])) {
 			return false;
 		}
 
@@ -199,11 +584,8 @@ class EventRegistrationService {
 		return false;
 	}
 
-
 	/**
 	 * Look up a user by barcode
-	 * @param string $barcode The patron barcode
-	 * @return array Result with user data or error
 	 */
 	public static function lookupUserByBarcode(string $barcode): array {
 		$result = [

@@ -5,6 +5,7 @@ require_once __DIR__ . '/../bootstrap_aspen.php';
 require_once ROOT_DIR . '/sys/CronLogEntry.php';
 require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
 require_once ROOT_DIR . '/sys/Events/EventInstance.php';
+require_once ROOT_DIR . '/services/EventRegistrationService.php';
 
 $cronLogEntry = new CronLogEntry();
 $cronLogEntry->startTime = time();
@@ -14,7 +15,7 @@ $cronLogEntry->insert();
 $expiredCount = 0;
 $invitedCount = 0;
 
-$expiredRowIds = UserAspenEventInstanceRegistration::getExpiredInvitedRowIds();
+$expiredRowIds = EventRegistrationService::getExpiredInvitedRowIds();
 
 $affectedInstanceIds = [];
 
@@ -35,7 +36,7 @@ foreach (array_keys($affectedInstanceIds) as $eventInstanceId) {
 	if (!$eventInstance->find(true)) {
 		continue;
 	}
-	if ($eventInstance->inviteNextOnWaitingList()) {
+	if (EventRegistrationService::inviteNextOnWaitingList($eventInstance)) {
 		$invitedCount++;
 	}
 }

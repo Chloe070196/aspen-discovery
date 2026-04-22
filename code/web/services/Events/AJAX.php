@@ -596,8 +596,8 @@ class Events_AJAX extends JSON_Action {
 		$interface->assign('eventDate', $eventInstance->date);
 		$interface->assign('eventTime', $eventInstance->time);
 		$interface->assign('numberOfSeats', $eventInstance->getEffectiveNumberOfSeats());
-		$interface->assign('availableSeats', $eventInstance->getAvailableSeats());
-		$interface->assign('registrationCount', $eventInstance->getRegistrationCount());
+		$interface->assign('availableSeats', EventRegistrationService::getAvailableSeats($eventInstance));
+		$interface->assign('registrationCount', EventRegistrationService::getRegistrationCount((int)$eventInstance->id));
 
 		return [
 			'success' => true,
@@ -764,7 +764,7 @@ class Events_AJAX extends JSON_Action {
 			'success' => true,
 			'registrations' => $registrationData,
 			'totalCount' => count($registrationData),
-			'availableSeats' => $eventInstance->getAvailableSeats(),
+			'availableSeats' => EventRegistrationService::getAvailableSeats($eventInstance),
 			'numberOfSeats' => $eventInstance->getEffectiveNumberOfSeats(),
 		];
 	}

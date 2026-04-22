@@ -560,7 +560,8 @@ class Event extends DataObject {
 		foreach ($upcomingInstances as $upcomingInstance) {
 			$upcomingInstanceIds[] = (int)$upcomingInstance->id;
 		}
-		$affectedUsersByStatus = UserAspenEventInstanceRegistration::getUsersGroupedByStatusForInstances($upcomingInstanceIds);
+		require_once ROOT_DIR . '/services/EventRegistrationService.php';
+		$affectedUsersByStatus = EventRegistrationService::getUsersGroupedByStatusForInstances($upcomingInstanceIds);
 
 		$this->deleted = 1;
 		$this->dateUpdated = time();
@@ -577,8 +578,8 @@ class Event extends DataObject {
 			}
 		}
 
-		$instanceForNotification = new EventInstance();
-		$instanceForNotification->sendCancellationNotificationEmails($upcomingInstances, $affectedUsersByStatus);
+		require_once ROOT_DIR . '/services/EventRegistrationService.php';
+		EventRegistrationService::sendCancellationNotificationEmails($upcomingInstances, $affectedUsersByStatus);
 
 		return $softDeleteResult;
 	}
