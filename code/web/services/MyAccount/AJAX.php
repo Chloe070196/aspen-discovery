@@ -8707,8 +8707,8 @@ class MyAccount_AJAX extends JSON_Action {
 
 		// save the user inputed registration information
 		foreach ($_REQUEST as $key => $value) {
-		    if (is_int($key)) {
-				$registration->saveEventFieldValue($key, $value); 
+		    if (is_numeric($key)) {
+				$userAspenEventInstanceRegistration->saveEventFieldValue($key, $value); 
 		    }
 		}
 
