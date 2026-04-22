@@ -17,25 +17,17 @@ class EventRegistrationService {
 	 * @return array Result with success status and message
 	 */
 	public static function registerUserForEvent(int $userId, int $eventInstanceId, ?int $staffUserId = null): array {
-		$result = [
-			'success' => false,
-			'title' => translate(['text' => 'Error', 'isPublicFacing' => true]),
-			'message' => translate(['text' => 'Unknown error occurred.', 'isPublicFacing' => true]),
-		];
-
 		$eventInstance = new EventInstance();
 		$eventInstance->id = $eventInstanceId;
 		if (!$eventInstance->find(true)) {
-			$result['message'] = translate(['text' => 'Event not found.', 'isPublicFacing' => true]);
-			return $result;
+			return self::publicErrorResult(translate(['text' => 'Event not found.', 'isPublicFacing' => true]));
 		}
 
 		require_once ROOT_DIR . '/sys/Account/User.php';
 		$user = new User();
 		$user->id = $userId;
 		if (!$user->find(true)) {
-			$result['message'] = translate(['text' => 'User not found.', 'isPublicFacing' => true]);
-			return $result;
+			return self::publicErrorResult(translate(['text' => 'User not found.', 'isPublicFacing' => true]));
 		}
 
 		$registration = new UserAspenEventInstanceRegistration();
@@ -44,23 +36,21 @@ class EventRegistrationService {
 
 		$waitingListInfo = $registration->getWaitingListInfo();
 		if (!self::hasAvailableSeats($eventInstance, 1) && !$waitingListInfo['canRegister']) {
-			$result['message'] = translate(['text' => 'This event is full. No seats available.', 'isPublicFacing' => true]);
-			return $result;
+			return self::publicErrorResult(translate(['text' => 'This event is full. No seats available.', 'isPublicFacing' => true]));
 		}
 
 		$registration->registeredByStaffId = $staffUserId;
 
 		if ($registration->registerUser()) {
-			$result['success'] = true;
-			$result['title'] = translate(['text' => 'Registration Successful', 'isPublicFacing' => true]);
-			$result['message'] = translate(['text' => 'User has been registered for this event.', 'isPublicFacing' => true]);
-
 			self::saveToUserEvents($eventInstance, $userId, $staffUserId);
-		} else {
-			$result['message'] = translate(['text' => 'Failed to create registration.', 'isPublicFacing' => true]);
+			return [
+				'success' => true,
+				'title' => translate(['text' => 'Registration Successful', 'isPublicFacing' => true]),
+				'message' => translate(['text' => 'User has been registered for this event.', 'isPublicFacing' => true]),
+			];
 		}
 
-		return $result;
+		return self::publicErrorResult(translate(['text' => 'Failed to create registration.', 'isPublicFacing' => true]));
 	}
 
 	/**
@@ -70,41 +60,28 @@ class EventRegistrationService {
 	 * @return array Result with success status and message
 	 */
 	public static function unregisterUserFromEvent(int $userId, int $eventInstanceId): array {
-		$result = [
-			'success' => false,
-			'title' => translate(['text' => 'Error', 'isPublicFacing' => true]),
-			'message' => translate(['text' => 'Unknown error occurred.', 'isPublicFacing' => true]),
-		];
-
-		$registration = new UserAspenEventInstanceRegistration();
-		$registration->userId = $userId;
-		$registration->eventInstanceId = $eventInstanceId;
-
-		if (!$registration->find(true)) {
-			$result['message'] = translate(['text' => 'Registration not found.', 'isPublicFacing' => true]);
-			return $result;
+		$registration = self::getRegistrationFor($userId, $eventInstanceId);
+		if (!$registration) {
+			return self::publicErrorResult(translate(['text' => 'Registration not found.', 'isPublicFacing' => true]));
 		}
 
 		if ($registration->delete()) {
-			$result['success'] = true;
-			$result['title'] = translate(['text' => 'Registration Cancelled', 'isPublicFacing' => true]);
-			$result['message'] = translate(['text' => 'Registration has been cancelled successfully.', 'isPublicFacing' => true]);
-		} else {
-			$result['message'] = translate(['text' => 'Failed to cancel registration.', 'isPublicFacing' => true]);
+			return [
+				'success' => true,
+				'title' => translate(['text' => 'Registration Cancelled', 'isPublicFacing' => true]),
+				'message' => translate(['text' => 'Registration has been cancelled successfully.', 'isPublicFacing' => true]),
+			];
 		}
 
-		return $result;
+		return self::publicErrorResult(translate(['text' => 'Failed to cancel registration.', 'isPublicFacing' => true]));
 	}
 
 	/**
 	 * Check if a user is registered for an event instance
 	 */
 	public static function isUserRegisteredForEvent(int $userId, int $eventInstanceId): bool {
-		$registration = new UserAspenEventInstanceRegistration();
-		$registration->userId = $userId;
-		$registration->eventInstanceId = $eventInstanceId;
-		$registration->status = 'registered';
-		return (bool)$registration->find(true);
+		$registration = self::getRegistrationFor($userId, $eventInstanceId);
+		return $registration !== false && $registration->status === 'registered';
 	}
 
 	/**
@@ -180,11 +157,7 @@ class EventRegistrationService {
 	}
 
 	public static function isWaitingListFull(EventInstance $instance): bool {
-		$capacity = $instance->getEffectiveWaitingListNumberOfSeats();
-		if ($capacity === null) {
-			return false;
-		}
-		return self::getWaitingListCount((int)$instance->id) >= $capacity;
+		return self::getAvailableWaitingListSeats($instance) === 0;
 	}
 
 	public static function getDisplayWaitingListSeats(EventInstance $instance): string {
@@ -553,6 +526,39 @@ class EventRegistrationService {
 		);
 	}
 
+	private static function publicErrorResult(string $message): array {
+		return [
+			'success' => false,
+			'title' => translate(['text' => 'Error', 'isPublicFacing' => true]),
+			'message' => $message,
+		];
+	}
+
+	private static function adminErrorResult(string $message): array {
+		return [
+			'success' => false,
+			'title' => translate(['text' => 'Error', 'isAdminFacing' => true]),
+			'message' => $message,
+		];
+	}
+
+	private static function getRegistrationFor(int $userId, int $eventInstanceId): UserAspenEventInstanceRegistration|false {
+		$registration = new UserAspenEventInstanceRegistration();
+		$registration->userId = $userId;
+		$registration->eventInstanceId = $eventInstanceId;
+		return $registration->find(true) ? $registration : false;
+	}
+
+	private static function formatUserData(User $user): array {
+		return [
+			'id' => $user->id,
+			'displayName' => $user->getDisplayName(),
+			'barcode' => $user->ils_barcode,
+			'email' => $user->email,
+			'homeLocation' => $user->getHomeLocationName(),
+		];
+	}
+
 	private static function hasPermissionForLocation(int $locationId, string $systemLevelPermission, string $locationLevelPermission, string $libraryLevelPermission): bool {
 		if (!UserAccount::userHasPermission([$systemLevelPermission, $locationLevelPermission, $libraryLevelPermission])) {
 			return false;
@@ -588,15 +594,8 @@ class EventRegistrationService {
 	 * Look up a user by barcode
 	 */
 	public static function lookupUserByBarcode(string $barcode): array {
-		$result = [
-			'success' => false,
-			'title' => translate(['text' => 'Error', 'isAdminFacing' => true]),
-			'message' => translate(['text' => 'User not found.', 'isAdminFacing' => true]),
-		];
-
 		if (empty($barcode)) {
-			$result['message'] = translate(['text' => 'Barcode is required.', 'isAdminFacing' => true]);
-			return $result;
+			return self::adminErrorResult(translate(['text' => 'Barcode is required.', 'isAdminFacing' => true]));
 		}
 
 		require_once ROOT_DIR . '/sys/Account/User.php';
@@ -604,17 +603,12 @@ class EventRegistrationService {
 		$user->ils_barcode = $barcode;
 
 		if ($user->find(true)) {
-			$result['success'] = true;
-			$result['title'] = translate(['text' => 'User Found', 'isAdminFacing' => true]);
-			$result['message'] = translate(['text' => 'User found successfully.', 'isAdminFacing' => true]);
-			$result['user'] = [
-				'id' => $user->id,
-				'displayName' => $user->getDisplayName(),
-				'barcode' => $user->ils_barcode,
-				'email' => $user->email,
-				'homeLocation' => $user->getHomeLocationName(),
+			return [
+				'success' => true,
+				'title' => translate(['text' => 'User Found', 'isAdminFacing' => true]),
+				'message' => translate(['text' => 'User found successfully.', 'isAdminFacing' => true]),
+				'user' => self::formatUserData($user),
 			];
-			return $result;
 		}
 
 		require_once ROOT_DIR . '/CatalogFactory.php';
@@ -624,21 +618,15 @@ class EventRegistrationService {
 			if ($newUser && !($newUser instanceof AspenError)) {
 				$newUser->getDisplayName();
 				$newUser->update();
-				$result['success'] = true;
-				$result['title'] = translate(['text' => 'User Found', 'isAdminFacing' => true]);
-				$result['message'] = translate(['text' => 'User loaded from ILS.', 'isAdminFacing' => true]);
-				$result['user'] = [
-					'id' => $newUser->id,
-					'displayName' => $newUser->getDisplayName(),
-					'barcode' => $newUser->ils_barcode,
-					'email' => $newUser->email,
-					'homeLocation' => $newUser->getHomeLocationName(),
+				return [
+					'success' => true,
+					'title' => translate(['text' => 'User Found', 'isAdminFacing' => true]),
+					'message' => translate(['text' => 'User loaded from ILS.', 'isAdminFacing' => true]),
+					'user' => self::formatUserData($newUser),
 				];
-				return $result;
 			}
 		}
 
-		$result['message'] = translate(['text' => 'User not found in Aspen or ILS.', 'isAdminFacing' => true]);
-		return $result;
+		return self::adminErrorResult(translate(['text' => 'User not found in Aspen or ILS.', 'isAdminFacing' => true]));
 	}
 }
