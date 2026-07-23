@@ -1,6 +1,7 @@
 <?php
 	require_once ROOT_DIR . '/sys/ECommerce/Pay360Setting.php';
 	require_once ROOT_DIR . '/sys/Account/UserPayment.php';
+	require_once ROOT_DIR . '/services/Pay360/Tax.php';
 
 // Interacts with the Pay360 API
 class Pay360_Client  {
@@ -282,26 +283,26 @@ class Pay360_Client  {
 					'displayableReference' => mb_substr($fineDetails['reason'], 0, 50),
 				],
 				'lgItemDetails' => [
-					'additionalReference' => mb_substr($fineDetails['reason'], 0, 50),
+					'additionalReference' => 'LIB01',
 					'narrative' => mb_substr($fineDetails['reason'], 0, 50),
+					'fundCode' => 'LIB',
 				],
 				'customerInfo' => [
 					'customerString1' => mb_substr($fineDetails['message'], 0, 50),
 				],
 				'lineId' => $fineDetails['fineId']
 			];
-			if (isset($fineDetails['vatCode'])) {
+			if (isset($fineDetails['sap_vat'])) {
+				$tax = new Tax();
+				$vatResult = $tax->calculateVat((int)$amountInMinorUnits, $fineDetails['sap_vat']);
 				$item['tax']['vat'] = [
-					'vatCode' => $fineDetails['vatCode'],
-					'vatRate' => "",
-					'vatAmountInMinorUnits' => "",
+					'vatCode' => $fineDetails['sap_vat'],
+					'vatRate' => $vatResult['rate'],
+					'vatAmountInMinorUnits' => $vatResult['vatAmountInMinorUnits'],
 				];
 			}
-			if (isset($fineDetails['fundCode'])) {
-				$item['lgItemDetails']['fundCode'] = $fineDetails['fundCode'];
-			}
-			if (isset($fineDetails['reference'])) {
-				$item['itemSummary']['reference'] = $fineDetails['reference'];
+			if (isset($fineDetails['sap_gl'])) {
+				$item['itemSummary']['reference'] = $fineDetails['sap_gl'];
 			}
 			array_push($items, $item);
 		}
