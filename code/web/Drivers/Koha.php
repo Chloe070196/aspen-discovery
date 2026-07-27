@@ -4994,6 +4994,10 @@ class Koha extends AbstractIlsDriver {
 
 		$result = $this->postSelfRegistrationToKoha($postVariables);
 
+		if (empty($result['success']) || empty($result['patronId'])) {
+			return $result;
+		}
+
 		if (!$library->ilsConsentEnabled) {
 			return $result;
 		}
